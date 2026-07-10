@@ -1,0 +1,19 @@
+# Dependencies and build output
+**/node_modules/
+**/.next/
+**/out/
+**/build/
+**/dist/
+**/coverage/
+
+# Environment and local tooling
+.env*
+!.env.example
+**/.vercel/
+*.tsbuildinfo
+*.log
+.DS_Store
+
+# Preserved Git metadata from the original standalone app
+**/.git-backup/
+
