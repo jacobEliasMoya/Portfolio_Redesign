@@ -1,13 +1,4 @@
-import type { HTMLAttributes } from "react";
-
-type TextVariant = "body" | "lead" | "small" | "label";
-type TextElement = "p" | "span" | "div";
-
-type TextProps = HTMLAttributes<HTMLElement> & {
-  as?: TextElement;
-  variant?: TextVariant;
-  accent?: boolean;
-};
+import type { TextProps } from "./text.types";
 
 export function Text({
   as,

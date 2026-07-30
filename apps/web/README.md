@@ -128,10 +128,54 @@ is visually small.
 - Give GraphQL fragments globally unique, domain-oriented names such as
   `ProjectCard_Project`.
 
+## Testing
+
+The app uses two complementary testing layers:
+
+- **Jest + Testing Library** for fast unit and component tests. These tests verify
+  isolated behavior, semantic markup, variants, props, and edge cases without
+  starting a real browser. Keep component tests beside the component as
+  `component-name.test.tsx`.
+- **Playwright** for end-to-end tests in real Chromium, Firefox, and WebKit
+  browsers. These tests verify complete user-visible journeys such as navigation,
+  responsive menus, forms, routing, and page rendering. Keep them in `tests/e2e`.
+
+Avoid testing the same detail at every layer. Use Jest for the many small cases
+and Playwright for a smaller set of important user journeys.
+
+Run component tests once:
+
+```bash
+npm test
+```
+
+Run component tests while developing:
+
+```bash
+npm run test:watch
+```
+
+Install Playwright's browser binaries after the initial dependency install:
+
+```bash
+npx playwright install
+```
+
+Run end-to-end tests:
+
+```bash
+npm run test:e2e
+```
+
+Open Playwright's interactive test runner:
+
+```bash
+npm run test:e2e:ui
+```
+
 ## Planned architecture phases
 
 1. Establish atomic component folders, design tokens, and component conventions.
 2. Add GraphQL client configuration, code generation, and colocated fragments.
 3. Add a typed CMS block registry and dynamic renderer.
 4. Add component tests, visual stories, and route-level integration coverage.
-

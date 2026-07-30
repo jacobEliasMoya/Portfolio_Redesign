@@ -1,11 +1,4 @@
-import type { ComponentPropsWithoutRef } from "react";
-
-type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
-
-type HeadingProps = ComponentPropsWithoutRef<"h1"> & {
-  level?: HeadingLevel;
-  accent?: boolean;
-};
+import type { HeadingProps } from "./heading.types";
 
 export function Heading({
   level = 2,
