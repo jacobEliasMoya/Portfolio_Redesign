@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
   // Temporarily required on Windows until Next.js fixes Turbopack Sass resolution.
   // See: https://github.com/vercel/next.js/issues/86431
   sassOptions: {
-    loadPaths: ['./node_modules/@payloadcms/ui/dist/scss/'],
+    loadPaths: [path.resolve(dirname, '../../node_modules/@payloadcms/ui/dist/scss')],
   },
   images: {
     localPatterns: [
@@ -47,7 +47,8 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   redirects,
   turbopack: {
-    root: path.resolve(dirname),
+    // npm hoists workspace dependencies to the repository-level node_modules.
+    root: path.resolve(dirname, '../..'),
   },
 }
 
