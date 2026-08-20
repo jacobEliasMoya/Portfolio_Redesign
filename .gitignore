@@ -13,6 +13,8 @@
 *.tsbuildinfo
 *.log
 .DS_Store
+Thumbs.db
+Desktop.ini
 
 # Preserved Git metadata from the original standalone app
 **/.git-backup/
