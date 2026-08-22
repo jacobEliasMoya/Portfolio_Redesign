@@ -50,14 +50,16 @@ The web application currently uses Next.js App Router, React, strict TypeScript,
 
 The homepage should remain concise:
 
-`Hero → Selected Work → What I Build → Lab → Contact`
+`Hero → Selected Work → Experience → What I Build → Lab → Contact`
 
-Do not add conventional portfolio sections by default. About content, a résumé timeline, testimonials, client logos, technology inventories, process explanations, or other secondary material should earn their place or live on a dedicated route.
+Do not add conventional portfolio sections by default. A deliberately minimal Experience section has earned a place because it gives the work professional context without reproducing the full résumé. Broader About content, testimonials, client logos, technology inventories, process explanations, or other secondary material should still earn their place or live on a dedicated route.
 
 Each homepage section has a specific strategic job:
 
 - **Hero — Identity:** Establish Creative Engineer at the intersection of visual thinking and software engineering. Interaction should enhance the composition, not become the composition.
 - **Selected Work — Evidence:** Show what has been proven or shipped. Expressive cards earn attention; detailed case studies establish technical credibility.
+- **Experience — Professional context:** Provide a compact, curated career history that validates seniority, trajectory, and relevant responsibilities without becoming a full résumé. Show only the most relevant roles, organization, title, dates, and one concise contribution or scope statement, with a link to the complete résumé.
+  Draft content and verification notes live in `docs/EXPERIENCE_CONTENT.md`; LinkedIn is the intended source of truth.
 - **What I Build — Ownership:** Show what Jacob can responsibly own without becoming a conventional skills grid. Technologies support capability rather than replace it.
 - **Lab — Trajectory:** Show where Jacob is going through experiments, unfinished ideas, research, AI/agent work, Go/backend work, tools, and prototypes. Lab is intentionally distinct from polished case studies.
 - **Contact — Conversion:** End confidently and convert interest into a conversation without repeating the résumé.
@@ -143,6 +145,7 @@ The portfolio should not attempt to perform every career function by itself:
 | Portfolio | Why should someone remember Jacob? |
 | Selected Work | Has he built meaningful things? |
 | Case studies | Does he understand engineering decisions? |
+| Experience | Has he applied those abilities professionally? |
 | What I Build | What can he own? |
 | Lab | Where is he going? |
 | Résumé | Has he done serious professional work? |

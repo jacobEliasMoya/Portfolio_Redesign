@@ -89,6 +89,11 @@ apps/web/
 This is the target structure. Directories should be added as the application
 needs them rather than committed empty.
 
+> Component implementations are intentionally paused until the visual design is
+> approved. The atomic layers and dependency rules remain the architectural
+> contract; current placeholder primitives should not be treated as a design
+> system.
+
 ## Atomic layers
 
 | Layer | Responsibility | May compose |

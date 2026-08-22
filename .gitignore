@@ -5,6 +5,8 @@
 **/build/
 **/dist/
 **/coverage/
+**/playwright-report/
+**/test-results/
 
 # Environment and local tooling
 .env*
