@@ -1,2 +1,2 @@
-import { Studio } from "@/features/studio/studio";
-export default function Home() { return <Studio />; }
+import { LoaderExperience } from "@/features/loader/loader";
+export default function Home() { return <LoaderExperience />; }

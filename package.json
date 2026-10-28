@@ -6,7 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:clouds": "node scripts/test-clouds.mjs",
+    "test:rotation": "node scripts/test-earth-rotation.mjs",
+    "test:orbit": "node scripts/test-text-orbit.mjs",
+    "test:wrapped": "node scripts/test-wrapped-wordmark.mjs",
+    "test:camera": "node scripts/test-camera-choreography.mjs",
+    "test:intro": "node scripts/test-loading-intro.mjs",
+    "test:pulse": "node scripts/test-letter-pulse.mjs",
+    "test:earth": "node --test scripts/test-earth.mjs scripts/test-ocean-ripple.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",

@@ -1,0 +1,10 @@
+.loader-experience { background: #000; width: 100%; height: 100dvh; overflow: hidden; position: relative; color: #eee; }
+.loader-viewport { position: absolute; inset: 0; width: 100%; height: 100%; }
+.loader-bottom { position: absolute; z-index: 2; bottom: max(16px, env(safe-area-inset-bottom)); left: clamp(16px, 4vw, 64px); right: clamp(16px, 4vw, 64px); pointer-events: none; }
+.loader-progress { background: #202020; height: 3px; width: 100%; overflow: hidden; }
+.loader-progress > span { display: block; height: 100%; background: #d3d3d3; transition: width .3s ease; }
+.loader-accessible-status { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.loader-retry { pointer-events: auto; margin-top: 12px; background: #111; color: #eee; padding: 10px 16px; border: 1px solid #555; }
+.loader-failure { height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; padding: 24px; color: #999; }
+.loader-failure a { text-decoration: underline; }
+@media (prefers-reduced-motion: reduce) { .loader-progress > span { transition: none; } }
