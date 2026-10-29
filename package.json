@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:ufo": "node scripts/test-ufo.mjs",
+    "test:moon": "node scripts/test-moon.mjs",
     "test:clouds": "node scripts/test-clouds.mjs",
     "test:rotation": "node scripts/test-earth-rotation.mjs",
     "test:orbit": "node scripts/test-text-orbit.mjs",

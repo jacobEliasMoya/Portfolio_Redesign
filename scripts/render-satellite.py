@@ -1,0 +1,90 @@
+"""Render exact exported Three.js asset for offline geometry review, never browser capture."""
+import bpy
+import json
+import math
+import sys
+from pathlib import Path
+from mathutils import Vector
+
+args=sys.argv[sys.argv.index("--")+1:]
+asset=json.loads(Path(args[0]).read_text(encoding="utf-8"))
+output=Path(args[1]);output.mkdir(parents=True,exist_ok=True)
+bpy.ops.object.select_all(action="SELECT");bpy.ops.object.delete(use_global=False)
+
+def coord(p):return (p[0],-p[2],p[1])
+
+images=[]
+for i,item in enumerate(asset["textures"]):
+    image=bpy.data.images.new("asset-texture-"+str(i),width=item["width"],height=item["height"],alpha=True)
+    channels=item["channels"];pixels=[];data=item["data"]
+    for j in range(0,len(data),channels):
+        values=[v/255 for v in data[j:j+channels]]
+        pixels.extend(values[:3] if channels>=3 else [values[0]]*3)
+        pixels.append(values[3] if channels==4 else 1.)
+    if item.get("flipY"):
+        stride=item["width"]*4;pixels=[v for y in reversed(range(item["height"])) for v in pixels[y*stride:(y+1)*stride]]
+    image.pixels.foreach_set(pixels);image.update();images.append(image)
+
+materials=[]
+for item in asset["materials"]:
+    m=bpy.data.materials.new(item["name"]);m.use_nodes=True
+    nodes=m.node_tree.nodes;links=m.node_tree.links;shader=nodes.get("Principled BSDF")
+    shader.inputs["Base Color"].default_value=(*item["color"],1)
+    shader.inputs["Metallic"].default_value=item["metalness"]
+    shader.inputs["Roughness"].default_value=item["roughness"]
+    shader.inputs["Emission Color"].default_value=(*item["emissive"],1)
+    shader.inputs["Emission Strength"].default_value=item["emissiveIntensity"]
+    if item["map"] is not None:
+        t=nodes.new("ShaderNodeTexImage");t.image=images[item["map"]];t.interpolation="Closest"
+        links.new(t.outputs["Color"],shader.inputs["Base Color"])
+        if item["basic"] or item["emissiveIntensity"]>0:
+            links.new(t.outputs["Color"],shader.inputs["Emission Color"])
+            shader.inputs["Emission Strength"].default_value=.65 if item["basic"] else item["emissiveIntensity"]
+    elif item["basic"]:
+        shader.inputs["Emission Color"].default_value=(*item["color"],1)
+        shader.inputs["Emission Strength"].default_value=.65
+    if item["roughnessMap"] is not None:
+        t=nodes.new("ShaderNodeTexImage");t.image=images[item["roughnessMap"]]
+        links.new(t.outputs["Color"],shader.inputs["Roughness"])
+    materials.append(m)
+
+for item in asset["meshes"]:
+    vertices=[coord(p) for p in item["positions"]]
+    faces=[(i,i+1,i+2) for i in range(0,len(vertices),3)]
+    mesh=bpy.data.meshes.new(item["name"]);mesh.from_pydata(vertices,[],faces);mesh.update()
+    obj=bpy.data.objects.new(item["name"],mesh);bpy.context.collection.objects.link(obj)
+    for slot in item["materials"]:mesh.materials.append(materials[slot])
+    for poly,index in zip(mesh.polygons,item["triangleMaterials"]):poly.material_index=index
+    uv=mesh.uv_layers.new(name="UVMap")
+    for loop in mesh.loops:uv.data[loop.index].uv=item["uvs"][loop.vertex_index]
+    if item["normals"]:
+        for poly in mesh.polygons:poly.use_smooth=True
+        mesh.normals_split_custom_set([coord(item["normals"][loop.vertex_index]) for loop in mesh.loops])
+
+def area(name,location,power,size,color,target=(0,0,.3),shape="DISK",size_y=None):
+    data=bpy.data.lights.new(name,"AREA");data.energy=power;data.shape=shape;data.size=size;data.color=color
+    if size_y is not None:data.size_y=size_y
+    obj=bpy.data.objects.new(name,data);bpy.context.collection.objects.link(obj);obj.location=coord(location)
+    obj.rotation_euler=(Vector(coord(target))-obj.location).to_track_quat("-Z","Y").to_euler()
+
+area("large warm key",(-3,5,5),850,5,(1,.94,.82))
+area("cool fill",(5,1,3),650,4,(.72,.86,1))
+area("rear edge",(0,3,-5),1100,3,(.8,.9,1))
+area("screen reflection",(-1,3,6),150,3,(1,1,1),shape="RECTANGLE",size_y=.5)
+
+scene=bpy.context.scene
+scene.render.engine="BLENDER_EEVEE_NEXT"
+scene.render.resolution_x=1440;scene.render.resolution_y=1000;scene.render.resolution_percentage=100
+scene.render.image_settings.file_format="PNG"
+scene.world.color=(.025,.025,.025)
+scene.world.use_nodes=True;scene.world.node_tree.nodes["Background"].inputs["Color"].default_value=(0,0,0,1)
+scene.world.node_tree.nodes["Background"].inputs["Strength"].default_value=.15
+scene.render.film_transparent=False
+scene.view_settings.view_transform="AgX"
+scene.view_settings.look="AgX - Medium High Contrast"
+camera_data=bpy.data.cameras.new("asset-review-camera");camera_data.type="ORTHO";camera_data.ortho_scale=7.1
+camera=bpy.data.objects.new("asset-review-camera",camera_data);bpy.context.collection.objects.link(camera);scene.camera=camera
+for name,location in [("satellite-model-front",(4.5,2.8,8)),("satellite-model-rear",(-4,2.6,-8)),("satellite-model-front-ortho",(0,.25,9)),("satellite-model-side",(9,.25,0))]:
+    camera.location=coord(location);camera.rotation_euler=(Vector(coord((0,.25,0)))-camera.location).to_track_quat("-Z","Y").to_euler()
+    scene.render.filepath=str(output/(name+".png"));bpy.ops.render.render(write_still=True)
+print("Offline exact-asset renders saved to",output)

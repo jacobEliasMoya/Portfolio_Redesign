@@ -12,17 +12,18 @@ test("camera stays continuous at transition boundaries and settles home", () => 
     assert.ok(distance(before.position, after.position) < 0.001);
     assert.ok(distance(before.target, after.target) < 0.001);
   }
-  assert.deepEqual(getCameraPose(100, start), { position: [0, 0, 12], target: [0, 0, 0] });
+  assert.deepEqual(getCameraPose(100, start), { position: [0, 0, 22], target: [0, 0, 0] });
 });
 test("camera visits every letter close-up before revealing the full word", () => {
   const shots = Array.from({ length: 7 }, (_, i) => ({ position: [i - 3, 0, 2], target: [i - 3, 0, 0] }));
+  assert.deepEqual(getCameraPose(0,null,false,shots), {position:[0,0,22],target:[0,0,0]});
   for (let i = 0; i < shots.length; i++) {
     const t = INTRO_TIMING.start + i * INTRO_TIMING.letterStep + 0.5;
     const pose = getCameraPose(t, null, false, shots);
     assert.ok(distance(pose.position, shots[i].position) < 1e-9);
     assert.ok(distance(pose.target, shots[i].target) < 1e-9);
   }
-  assert.deepEqual(getCameraPose(EARLIEST_TRANSITION, null, false, shots), { position: [0, 0, 12], target: [0, 0, 0] });
+  assert.deepEqual(getCameraPose(EARLIEST_TRANSITION, null, false, shots), { position: [0, 0, 22], target: [0, 0, 0] });
   for (let t = 0; t < EARLIEST_TRANSITION; t += 0.01) {
     const a = getCameraPose(t, null, false, shots);
     const b = getCameraPose(t + 0.00001, null, false, shots);
@@ -32,5 +33,5 @@ test("camera visits every letter close-up before revealing the full word", () =>
   }
 });
 test("reduced motion holds the same camera throughout every stage", () => {
-  for (const t of [0, 1, 3, 4, 6, 100]) assert.deepEqual(getCameraPose(t, EARLIEST_TRANSITION, true), { position: [0, 0, 12], target: [0, 0, 0] });
+  for (const t of [0, 1, 3, 4, 6, 100]) assert.deepEqual(getCameraPose(t, EARLIEST_TRANSITION, true), { position: [0, 0, 22], target: [0, 0, 0] });
 });

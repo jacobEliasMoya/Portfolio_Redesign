@@ -1,5 +1,19 @@
 # Change log
 
+## 2026-10-29 — Flight, lunar landing and archive satellite checkpoint
+
+- Add the approved hexagonal UFO, keyboard flight, chase camera, hull clearance, charged plasma weapons, terrain impacts, tile damage and irregular planet/text destruction.
+- Add the survey-based hexagonal Moon, tidal lock, lunar collisions, drift after Earth destruction and grayscale lunar impact effects.
+- Build the lunar landing pad, retracting approach beacons, gear, camera-gated takeoff, smooth control handoff and guided L-to-land/relaunch. Landing requires five-unit range and a 45-degree approach cone.
+- Add the Sabo JM lunar flag with continuous gentle ripple and stronger launch wash. Add a more metallic disc finish and restrained engine-driven underside rings; remove the rejected motion-reactive trails.
+- Add procedural stars, wider text orbit, flat-first Jakes Space formation, cloud cleanup/drift and a nonpilot scroll camera path.
+- Pool ship crash geometry/sparks, prepare collision indices incrementally, cap/adapt render resolution and index shared hex geometry without reducing faces. CPU measurements and browser-profiling limits are recorded in docs/performance.md.
+- Build and visually approve the archive satellite: tapered six-sided body, recessed curved display, solar wings, dish, vents and JM badge. Static model uses eight material batches / 8,168 triangles and one small display texture.
+- Add /moon, /ufo and /satellite inspection routes; save approved concepts and exact-model Blender review images with a repeatable offline rendering script.
+- Preserve the reference-3d-modeling workflow in .agents/skills so it travels with the repository; retain the installed personal copy.
+
+Validation: all 110 automated tests, ESLint and production build pass. Jacob approved the final satellite visually. Offline Blender images verify model geometry; agent browser inspection and device FPS profiling remain unavailable under the saved localhost permission. The satellite display is still illustrative; original-site integration and main-scene placement remain future work. This is a source checkpoint, with no deployment changes.
+
 ## 2026-10-28 — Interactive block Earth checkpoint
 
 - Replace the root foundation preview with a full-window black 3D scene and bottom loading bar; retain /studio and add /earth for inspection.

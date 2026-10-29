@@ -2,7 +2,7 @@ import { INTRO_TIMING, LOADING_COMPLETE } from "./loading-intro.mjs";
 
 // Zero velocity and acceleration at both ends avoids a hard change of pace.
 const easeCamera = (value) => { const t = Math.max(0, Math.min(1, value)); return t * t * t * (t * (t * 6 - 15) + 10); };
-const home = [0, 0, 12];
+const home = [0, 0, 22];
 const bezier = (a, b, c, d, t) => {
   const u = 1 - t;
   return a.map((v, i) => u ** 3 * v + 3 * u ** 2 * t * b[i] + 3 * u * t ** 2 * c[i] + t ** 3 * d[i]);
@@ -19,7 +19,7 @@ export function getCameraPose(seconds, transitionStart, reducedMotion = false, s
   if (transitionStart === null) {
     if (shots.length) {
       const anchors = [
-        { time: 0, position: shots[0].position, target: shots[0].target },
+        { time: 0, position: home, target: [0, 0, 0] },
         ...shots.map((shot, i) => ({ time: timing.start + i * timing.letterStep + 0.5, ...shot })),
         { time: timing.complete, position: home, target: [0, 0, 0] },
       ];
@@ -40,10 +40,10 @@ export function getCameraPose(seconds, transitionStart, reducedMotion = false, s
     const local = Math.max(0, seconds - transitionStart);
     if (local < INTRO_TIMING.scatter) {
       const t = easeCamera(local / INTRO_TIMING.scatter);
-      position = bezier(home, [0, 0, 12.6], [0, 0, 13.4], [0, 0, 12.8], t);
+      position = bezier(home, [0, 0, home[2] + .6], [0, 0, home[2] + 1.4], [0, 0, home[2] + .8], t);
     } else {
       const t = easeCamera((local - INTRO_TIMING.scatter) / INTRO_TIMING.gather);
-      position = bezier([0, 0, 12.8], [0, 0, 10.4], [0, 0, 10.3], home, t);
+      position = bezier([0, 0, home[2] + .8], [0, 0, home[2] - 1.6], [0, 0, home[2] - 1.7], home, t);
       target = [0, 0, 0];
     }
   }

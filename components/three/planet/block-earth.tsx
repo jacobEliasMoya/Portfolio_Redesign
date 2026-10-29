@@ -1,12 +1,17 @@
 "use client";
+import { ImpactSmoke } from "./impact-smoke";
+import { PLANET_HITS } from "./planet-explosion.mjs";
+import { getProjectileTarget } from "@/components/three/ufo/projectile-collision.mjs";
+import { useDestructibleInstances } from "@/hooks/use-destructible-instances";
 
 import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useFrame, useLoader, useThree } from "@react-three/fiber";
-import { Color, FileLoader, Group, InstancedMesh, MathUtils, Object3D, Quaternion, SRGBColorSpace, Vector3 } from "three";
+import { Color, InstancedBufferAttribute, DynamicDrawUsage, FileLoader, Group, InstancedMesh, MathUtils, Object3D, Quaternion, SRGBColorSpace, Vector3 } from "three";
 import { applyEarthDrag, EARTH_AXIAL_TILT, EARTH_IDLE_SPEED } from "./earth-rotation.mjs";
 import { easePulse } from "@/components/three/animation/letter-pulse.mjs";
 import { getOceanRipple } from "./ocean-ripple.mjs";
-import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import { applyImpactGlow } from "./impact-material.mjs";
+import { createHexagonalEarthGeometry } from "./hexagonal-earth-geometry.mjs";
 
 type EarthVolume = { version: number; radius: number; positions: number[]; normals: number[]; sizes: number[]; colors: number[]; oceanMask: number[] };
 function parseEarth(raw: unknown): EarthVolume {
@@ -34,7 +39,7 @@ export type BlockEarthProps = {
   onRevealed?: () => void;
 };
 
-/** Real, beveled cube instances; map-derived continents and raised relief on all six sides. */
+/** Real, beveled hexagonal prism instances; map-derived continents and raised relief on all six sides. */
 export function BlockEarth({ children, radius = 3, position = [0, 0, 0], rotation = [0, Math.PI / 2, 0], revealed = true, reducedMotion = false, autoRotate = false, axialTilt = true, draggable = false, onRevealed }: BlockEarthProps) {
   const raw = useLoader(FileLoader, "/models/earth/block-earth.json?revision=ocean-ripple-1");
   const data = useMemo(() => parseEarth(raw), [raw]);
@@ -43,11 +48,12 @@ export function BlockEarth({ children, radius = 3, position = [0, 0, 0], rotatio
     const source = new Vector3(-0.643, 0.174, -0.746).normalize();
     return data.oceanMask.flatMap((water, i) => water ? [{ index: i, angle: Math.acos(MathUtils.clamp(data.normals[i * 3] * source.x + data.normals[i * 3 + 1] * source.y + data.normals[i * 3 + 2] * source.z, -1, 1)) }] : []);
   }, [data]);
-  const waveTime = useRef(0);
+  const waveTime = useRef(0), waveStep = useRef(0);
   const waveStrength = useRef(new Float32Array(data.sizes.length));
   const wavesMoved = useRef(false);
   const mesh = useRef<InstancedMesh>(null);
-  const revealGroup = useRef<Group>(null);
+  const scorched=useDestructibleInstances(mesh,{foundation:2.94,blast:.3,padding:.065,mode:"dent",threshold:PLANET_HITS.earth});
+  const revealGroup = useRef<Group>(null),interior=useRef<Group>(null),clouds=useRef<Group>(null);
   const spin = useRef<Group>(null);
   const control = useRef<Group>(null);
   const orientation = useRef(new Quaternion());
@@ -60,26 +66,34 @@ export function BlockEarth({ children, radius = 3, position = [0, 0, 0], rotatio
   useEffect(() => {
     if (!draggable) return;
     let pointer: number | null = null, lastX = 0, lastY = 0;
-    const down = (event: PointerEvent) => { if (event.button !== 0 || pointer !== null) return; pointer = event.pointerId; lastX = event.clientX; lastY = event.clientY; dragging.current = true; canvas.setPointerCapture(pointer); invalidate(); };
+    const touches = new Set<number>();
+    const down = (event: PointerEvent) => {
+      if (event.pointerType === "touch") {
+        touches.add(event.pointerId);
+        if (touches.size > 1) { const captured = pointer; pointer = null; dragging.current = false; if (captured !== null && canvas.hasPointerCapture(captured)) canvas.releasePointerCapture(captured); return; }
+      }
+      if (event.button !== 0 || pointer !== null) return; pointer = event.pointerId; lastX = event.clientX; lastY = event.clientY; dragging.current = true; canvas.setPointerCapture(pointer); invalidate(); };
     const move = (event: PointerEvent) => { if (pointer !== event.pointerId) return; applyEarthDrag(orientation.current, event.clientX - lastX, event.clientY - lastY, camera.quaternion); lastX = event.clientX; lastY = event.clientY; invalidate(); };
-    const up = (event: PointerEvent) => { if (pointer !== event.pointerId) return; pointer = null; dragging.current = false; if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId); };
+    const up = (event: PointerEvent) => { touches.delete(event.pointerId); if (pointer !== event.pointerId) return; pointer = null; dragging.current = false; if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId); };
     const previous = canvas.style.touchAction; canvas.style.setProperty("touch-action", "none");
     canvas.addEventListener("pointerdown", down); canvas.addEventListener("pointermove", move); canvas.addEventListener("pointerup", up); canvas.addEventListener("pointercancel", up); canvas.addEventListener("lostpointercapture", up);
     return () => { dragging.current = false; if (pointer !== null && canvas.hasPointerCapture(pointer)) canvas.releasePointerCapture(pointer); canvas.style.setProperty("touch-action", previous); canvas.removeEventListener("pointerdown", down); canvas.removeEventListener("pointermove", move); canvas.removeEventListener("pointerup", up); canvas.removeEventListener("pointercancel", up); canvas.removeEventListener("lostpointercapture", up); };
   }, [canvas, draggable, invalidate, camera]);
   const amount = useRef(reducedMotion && revealed ? 1 : 0);
   const announced = useRef(false);
-  const geometry = useMemo(() => new RoundedBoxGeometry(1, 1, 1, 1, 0.035), []);
+  const geometry = useMemo(() => {const tile=createHexagonalEarthGeometry();tile.setAttribute("impactHeat",new InstancedBufferAttribute(new Float32Array(data.sizes.length),1));return tile;}, [data.sizes.length]);
   useEffect(() => () => geometry.dispose(), [geometry]);
   useEffect(() => {
     if (!mesh.current) return;
+    mesh.current.instanceMatrix.setUsage(DynamicDrawUsage);
     const transform = new Object3D(), color = new Color();
     const normal = new Vector3(), up = new Vector3(0, 1, 0);
     for (let i = 0; i < data.sizes.length; i++) {
       transform.position.fromArray(data.positions, i * 3);
       normal.fromArray(data.normals, i * 3).normalize();
       transform.quaternion.setFromUnitVectors(up, normal);
-      transform.scale.setScalar(data.sizes[i]);
+      // Broader tangent faces overlap adjacent tiles; extra radial depth anchors wave crests.
+      transform.scale.set(data.sizes[i] * 1.4, data.sizes[i] * 1.15, data.sizes[i] * 1.4);
       transform.updateMatrix();
       mesh.current.setMatrixAt(i, transform.matrix);
       color.setRGB(data.colors[i * 3], data.colors[i * 3 + 1], data.colors[i * 3 + 2], SRGBColorSpace);
@@ -89,12 +103,18 @@ export function BlockEarth({ children, radius = 3, position = [0, 0, 0], rotatio
     if (mesh.current.instanceColor) mesh.current.instanceColor.needsUpdate = true;
   }, [data]);
   useFrame((state, delta) => {
-    const animateWater = revealed && !reducedMotion;
-    if (animateWater) waveTime.current += Math.min(delta, 0.1);
-    if (mesh.current && (animateWater || wavesMoved.current)) {
+    const phase=mesh.current?getProjectileTarget(mesh.current)?.stepPlanetExplosion(delta,reducedMotion)??"intact":"intact";
+    if(interior.current)interior.current.visible=phase==="intact"||phase==="charging";
+    if(clouds.current)clouds.current.visible=phase==="intact";
+    if(phase==="charging"||phase==="exploding")state.invalidate();
+    const animateWater = phase==="intact" && revealed && !reducedMotion;
+    if (animateWater) { const dt=Math.min(delta,.1); waveTime.current += dt; waveStep.current += dt; }
+    if (phase==="intact" && mesh.current && ((animateWater && waveStep.current >= 1/30) || (!animateWater && wavesMoved.current))) {
+      const waterDelta=waveStep.current; waveStep.current=0;
       const matrices = mesh.current.instanceMatrix.array;
       for (const { index: i, angle } of ocean) {
-        const strength = animateWater ? easePulse(waveStrength.current[i], getOceanRipple(waveTime.current, angle), delta) : 0;
+        if(scorched.current.has(i))continue;
+        const strength = animateWater ? easePulse(waveStrength.current[i], getOceanRipple(waveTime.current, angle), waterDelta) : 0;
         waveStrength.current[i] = strength;
         // Translate outward along the cube's radial normal; never alter land or accumulate offsets.
         const lift = strength * 0.055;
@@ -106,7 +126,7 @@ export function BlockEarth({ children, radius = 3, position = [0, 0, 0], rotatio
       wavesMoved.current = animateWater;
     }
     if (animateWater) state.invalidate();
-    amount.current = reducedMotion ? Number(revealed) : MathUtils.damp(amount.current, Number(revealed), 3, Math.min(delta, 0.1));
+    amount.current = reducedMotion ? Number(revealed) : MathUtils.damp(amount.current, Number(revealed), 7, Math.min(delta, 0.1));
     if (revealGroup.current) {
       revealGroup.current.visible = amount.current > 0.001;
       revealGroup.current.scale.setScalar(radius / data.radius * amount.current);
@@ -132,11 +152,17 @@ export function BlockEarth({ children, radius = 3, position = [0, 0, 0], rotatio
     <group rotation={[rotation[0], rotation[1], rotation[2] + (axialTilt ? EARTH_AXIAL_TILT : 0)]}>
     <group ref={revealGroup} scale={reducedMotion && revealed ? radius / data.radius : 0}>
       <group ref={spin}>
+        {/* Opaque foundation prevents background pinholes at patch seams and moving ocean crests. */}
+        <group ref={interior}><mesh>
+          <sphereGeometry args={[data.radius * 0.98, 64, 40]} />
+          <meshStandardMaterial color="#073775" roughness={0.75} metalness={0.03} />
+        </mesh></group>
         <instancedMesh ref={mesh} args={[undefined, undefined, data.sizes.length]} frustumCulled={false}>
           <primitive object={geometry} attach="geometry" />
-          <meshStandardMaterial roughness={0.58} metalness={0.08} />
+          <meshStandardMaterial roughness={0.58} metalness={0.08} onBeforeCompile={applyImpactGlow} customProgramCacheKey={()=>"earth-impact-glow-v3"} />
         </instancedMesh>
-        {children}
+        <ImpactSmoke earth={mesh} reducedMotion={reducedMotion}/>
+        <group ref={clouds}>{children}</group>
       </group>
     </group>
     </group>

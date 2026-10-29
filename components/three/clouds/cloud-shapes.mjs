@@ -31,28 +31,19 @@ export function buildCloudShape(variant = "billow", seed = 1) {
 /** Sparse, intentionally staggered patches; leave the equatorial text band clear. */
 export const CLOUD_PLACEMENTS = Object.freeze([
   { variant: "billow", lon: -115, lat: 33, scale: .38, heading: .3 },
-  { variant: "wisp", lon: -65, lat: 54, scale: .48, heading: -.5 },
   { variant: "bank", lon: -15, lat: 37, scale: .38, heading: .7 },
   { variant: "billow", lon: 60, lat: 46, scale: .34, heading: -.2 },
-  { variant: "wisp", lon: 125, lat: 30, scale: .45, heading: .6 },
   { variant: "bank", lon: 175, lat: 53, scale: .36, heading: -.3 },
-  { variant: "wisp", lon: -150, lat: -36, scale: .48, heading: -.4 },
   { variant: "bank", lon: -80, lat: -43, scale: .32, heading: .3 },
   { variant: "billow", lon: -10, lat: -32, scale: .35, heading: .5 },
-  { variant: "spiral", lon: 65, lat: -40, scale: .34, heading: .1 },
-  { variant: "wisp", lon: 130, lat: -51, scale: .44, heading: -.2 },
   { variant: "bank", lon: -110, lat: 42, scale: .34, heading: -.7 },
-  { variant: "wisp", lon: -72, lat: -25, scale: .4, heading: 1.1 },
   { variant: "billow", lon: 85, lat: 30, scale: .3, heading: .2 },
   { variant: "bank", lon: -155, lat: 24, scale: .3, heading: .5 },
   { variant: "billow", lon: -42, lat: 28, scale: .28, heading: -.4 },
-  { variant: "wisp", lon: 28, lat: 55, scale: .36, heading: .7 },
   { variant: "bank", lon: 95, lat: 58, scale: .3, heading: -.6 },
   { variant: "billow", lon: 155, lat: 34, scale: .32, heading: .3 },
-  { variant: "wisp", lon: -122, lat: -27, scale: .37, heading: -.5 },
   { variant: "bank", lon: -48, lat: -54, scale: .34, heading: .8 },
   { variant: "billow", lon: 20, lat: -48, scale: .3, heading: .2 },
-  { variant: "wisp", lon: 98, lat: -29, scale: .4, heading: -.8 },
   { variant: "bank", lon: 165, lat: -36, scale: .32, heading: .4 },
 ]);
 

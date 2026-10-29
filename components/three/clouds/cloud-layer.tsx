@@ -1,16 +1,19 @@
 "use client";
+import { useDestructibleInstances } from "@/hooks/use-destructible-instances";
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Color, Group, InstancedMesh, MathUtils, MeshStandardMaterial, Object3D, Vector3 } from "three";
+import { mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { buildCloudLayer, buildCloudShape } from "./cloud-shapes.mjs";
 
 export type CloudVariant = "billow" | "wisp" | "bank" | "spiral";
-type Block = { position: number[]; normal?: number[]; size: number; shade: number };
-function CloudBlocks({ blocks, enabled = true, reducedMotion = false, drift = false }: { blocks: Block[]; enabled?: boolean; reducedMotion?: boolean; drift?: boolean }) {
+type Block = { position: number[]; normal?: number[]; size: number; shade: number; variant?:string };
+function CloudBlocks({ blocks, enabled = true, reducedMotion = false, drift = false, driftSpeed=.012 }: { blocks: Block[]; enabled?: boolean; reducedMotion?: boolean; drift?: boolean;driftSpeed?:number }) {
   const mesh = useRef<InstancedMesh>(null), group = useRef<Group>(null), material = useRef<MeshStandardMaterial>(null);
-  const opacity = useRef(0);
-  const geometry = useMemo(() => new RoundedBoxGeometry(1, 1, 1, 1, .055), []);
+  useDestructibleInstances(mesh,{blast:.22,padding:.02});
+  const opacity = useRef(0),driftTime=useRef(0);
+  const geometry = useMemo(() => {const original=new RoundedBoxGeometry(1,1,1,1,.055);const indexed=mergeVertices(original);original.dispose();return indexed;}, []);
   useEffect(() => () => geometry.dispose(), [geometry]);
   useEffect(() => {
     if (!mesh.current) return;
@@ -31,7 +34,7 @@ function CloudBlocks({ blocks, enabled = true, reducedMotion = false, drift = fa
     if (material.current) material.current.opacity = opacity.current;
     if (group.current) {
       group.current.visible = opacity.current > .005;
-      if (drift && enabled && !reducedMotion) { group.current.rotation.y += dt*.008; state.invalidate(); }
+      if (drift && enabled && !reducedMotion) { driftTime.current+=dt;group.current.rotation.y += dt*driftSpeed;group.current.rotation.x=Math.sin(driftTime.current*.07)*.012;group.current.rotation.z=Math.sin(driftTime.current*.05)*.008; state.invalidate(); }
     }
     if (Math.abs(opacity.current-Number(enabled))>.001) state.invalidate();
   });
@@ -50,5 +53,7 @@ export function CloudShape({ variant = "billow", seed = 1, reducedMotion = false
 /** Place inside BlockEarth: its parent already supplies radius, drag, axial tilt and spin. */
 export function CloudLayer({ enabled = true, reducedMotion = false }: { enabled?: boolean; reducedMotion?: boolean }) {
   const blocks = useMemo(() => buildCloudLayer(), []);
-  return <CloudBlocks blocks={blocks} enabled={enabled} reducedMotion={reducedMotion} drift />;
+  const billow=useMemo(()=>blocks.filter(block=>block.variant==="billow"),[blocks]);
+  const bank=useMemo(()=>blocks.filter(block=>block.variant==="bank"),[blocks]);
+  return <><CloudBlocks blocks={billow} enabled={enabled} reducedMotion={reducedMotion} drift driftSpeed={.012}/><CloudBlocks blocks={bank} enabled={enabled} reducedMotion={reducedMotion} drift driftSpeed={.007}/></>;
 }

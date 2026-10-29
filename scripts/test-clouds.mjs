@@ -14,6 +14,7 @@ test("all four cloud sculptures are repeatable, distinct and finite", () => {
 });
 test("small low clouds stay above the base globe while allowing mountain intersections", () => {
   const blocks = buildCloudLayer();
+  assert.ok(blocks.every(b=>b.variant==="billow"||b.variant==="bank"));
   assert.ok(blocks.length > 500 && blocks.length < 9000);
   assert.ok(blocks.some((b) => Math.hypot(...b.position) < 3.3), "low clouds should enter the mountain height range");
   assert.ok(Math.max(...blocks.map((b) => b.size)) < .08, "cloud blocks should remain small");

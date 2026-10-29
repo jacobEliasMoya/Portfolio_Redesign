@@ -8,3 +8,7 @@
 .loader-failure { height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; padding: 24px; color: #999; }
 .loader-failure a { text-decoration: underline; }
 @media (prefers-reduced-motion: reduce) { .loader-progress > span { transition: none; } }
+.loader-zoom { position: absolute; z-index: 3; right: clamp(16px, 4vw, 64px); bottom: max(36px, calc(env(safe-area-inset-bottom) + 20px)); display: flex; gap: 6px; }
+.loader-zoom button { border: 1px solid #454545; background: #111d; color: #eee; min-width: 44px; min-height: 44px; padding: 8px 12px; cursor: pointer; }
+.loader-zoom button:disabled { opacity: .3; cursor: default; }
+.loader-tour-hint { position:absolute; bottom:72px; right:clamp(16px,4vw,64px); z-index:2; max-width:calc(100% - 32px); margin:0; color:#a7b3b0; font-family:var(--font-sabo-filled),monospace; font-size:9px; line-height:1.8; text-align:right; pointer-events:none; text-shadow:0 1px 5px #000; }

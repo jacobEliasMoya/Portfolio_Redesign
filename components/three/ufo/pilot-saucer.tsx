@@ -1,0 +1,124 @@
+"use client";
+import { useEffect, useRef, type RefObject } from "react";
+import { useFrame, useThree } from "@react-three/fiber";
+import { Euler, Group, Quaternion, Vector3 } from "three";
+import {canLand,landingPose,landingEase} from "./lunar-landing.mjs";
+import { blendLaunchAttitude, launchProgress } from "./lunar-launch.mjs";
+import { CrashEffects, type CrashEvent } from "./crash-effects";
+import { resolveSaucerContact, samplePlanetContacts } from "./saucer-crash.mjs";
+import { SaucerProjectiles } from "./saucer-projectiles";
+import { UFOModel,type UFOType } from "./ufo-model";
+import { getFlightInput } from "./flight-controls.mjs";
+import { createWeaponCharge } from "./weapon-charge.mjs";
+import { createFlight, stepFlight } from "./saucer-flight.mjs";
+
+export function PilotSaucer({type="hexagonal",launchCameraReady,onLandingStatus,trackPositionRef,trackHeadingRef,active=false,visible=true,reducedMotion=false,center=[0,0,0],earthRadius=0,scale=.3}:{onLandingStatus?:(status:string)=>void;launchCameraReady?:RefObject<boolean>;type?:UFOType;trackPositionRef?:RefObject<Vector3>;trackHeadingRef?:RefObject<Vector3>;active?:boolean;visible?:boolean;reducedMotion?:boolean;center?:[number,number,number];earthRadius?:number;scale?:number}) {
+ const group=useRef<Group>(null),state=useRef(createFlight()),keys=useRef(new Set<string>());
+ const reset=useRef(true),gearRef=useRef(1),engineRef=useRef(0),mode=useRef("docked"),launchAge=useRef(0);
+ const handoff=useRef({age:2,from:new Quaternion(),target:new Quaternion(),euler:new Euler(0,0,0,"YXZ")});
+ const landing=useRef({requested:false,age:0,start:new Vector3(),rotation:new Quaternion(),status:""});
+ const dock=useRef({point:new Vector3(),last:new Vector3(),velocity:new Vector3(),normal:new Vector3(),heading:new Vector3(),rotation:new Quaternion(),seen:false});
+ const shotsRef=useRef<number[]>([]),charge=useRef(createWeaponCharge());
+ const crash=useRef<CrashEvent>({serial:0,kind:"bounce",age:10,point:new Vector3(),normal:new Vector3(0,1,0),velocity:new Vector3()}),crashed=useRef(false);
+ const canvas=useThree(s=>s.gl.domElement),invalidate=useThree(s=>s.invalidate);
+ const cx=center[0],cy=center[1],cz=center[2];
+ useEffect(()=>{reset.current=true;invalidate();},[cx,cy,cz,earthRadius,invalidate]);
+ useEffect(()=>{
+  if(!active)return;
+  const previousTabIndex=canvas.getAttribute("tabindex");canvas.setAttribute("tabindex","0");canvas.focus({preventScroll:true});
+  const supported=new Set(["KeyL","KeyF","KeyQ","KeyE","KeyC","KeyW","KeyS","KeyA","KeyD","Space","ShiftLeft","ShiftRight","KeyR","ArrowLeft","ArrowRight","ArrowUp","ArrowDown"]);
+  const clear=()=>{keys.current.clear();landing.current.requested=false;shotsRef.current=[];charge.current.cancel();invalidate();};
+  const key=(e:KeyboardEvent)=>{
+   if(!supported.has(e.code))return;
+   // Always release held keys, even if focus moved to a menu or text field.
+   if(e.type==="keyup"){keys.current.delete(e.code);if(e.code==="KeyF"){const power=charge.current.release("key",performance.now());if(power!==null&&shotsRef.current.length<24)shotsRef.current.push(power);}invalidate();return;}
+   const target=e.target instanceof HTMLElement?e.target:null;
+   if(target&&(target.closest("input,textarea,select")||target.isContentEditable))return;
+   // Space still activates a focused menu button; arrows and flight keys remain available.
+   if(e.code==="Space"&&target?.closest("button,a"))return;
+   e.preventDefault();
+   keys.current.add(e.code);
+   if(e.code==="KeyL"&&!e.repeat)landing.current.requested=true;
+   if(e.code==="KeyF"&&!e.repeat)charge.current.begin("key",performance.now());
+   if(e.code==="KeyR"){crashed.current=false;reset.current=true;shotsRef.current=[];charge.current.cancel();}
+   invalidate();
+  };
+  const down=(e:PointerEvent)=>{if(e.button===0&&e.pointerType!=="touch"){canvas.focus({preventScroll:true});charge.current.begin("pointer",performance.now());invalidate();}};
+  const up=(e:PointerEvent)=>{if(e.button!==0)return;const power=charge.current.release("pointer",performance.now());if(power!==null&&shotsRef.current.length<24)shotsRef.current.push(power);invalidate();};
+  const hidden=()=>{if(document.hidden)clear();};
+  window.addEventListener("keydown",key,{capture:true});window.addEventListener("keyup",key);window.addEventListener("blur",clear);document.addEventListener("visibilitychange",hidden);
+  canvas.addEventListener("pointerdown",down);window.addEventListener("pointerup",up);window.addEventListener("pointercancel",clear);
+  return()=>{clear();if(previousTabIndex===null)canvas.removeAttribute("tabindex");else canvas.setAttribute("tabindex",previousTabIndex);window.removeEventListener("keydown",key,{capture:true});window.removeEventListener("keyup",key);window.removeEventListener("blur",clear);document.removeEventListener("visibilitychange",hidden);canvas.removeEventListener("pointerdown",down);window.removeEventListener("pointerup",up);window.removeEventListener("pointercancel",clear);};
+ },[active,canvas,invalidate]);
+ useFrame((scene,delta)=>{
+  const s=state.current;
+  crash.current.age+=Math.min(delta,.05);
+  if(!active&&crashed.current){crashed.current=false;reset.current=true;}
+  if(crashed.current){shotsRef.current=[];charge.current.cancel();keys.current.clear();if(crash.current.age>=2){crashed.current=false;reset.current=true;}else {scene.invalidate();return;}}
+  if(reset.current){handoff.current.age=2;mode.current="docked";launchAge.current=0;s.position.set(cx+earthRadius*.8,cy+earthRadius*.65+1,cz+earthRadius+2);s.velocity.set(0,0,0);s.yaw=Math.PI;s.pitch=0;s.bank=0;s.lean=0;crashed.current=false;reset.current=false;}
+  const pad=earthRadius>0?scene.scene.getObjectByName("lunar-launch-pad"):null;
+  const available=pad&&pad.userData.launchAvailable!==false;
+  const d=dock.current,dt=Math.min(delta,.1);
+  const status=mode.current==="landing"?"LANDING":mode.current==="landed"?"PARKED · L TO LAUNCH":mode.current==="flying"&&available?(canLand(s.position,d.point,d.normal)?"PAD IN RANGE · L TO LAND":"APPROACH PAD FROM ABOVE · L TO LAND"):"";
+  if(landing.current.status!==status){landing.current.status=status;onLandingStatus?.(status);}
+  if(group.current)group.current.userData.landingEligible=false;
+  if(available){
+   pad.updateWorldMatrix(true,false);pad.getWorldPosition(d.point);pad.getWorldQuaternion(d.rotation);
+   d.velocity.copy(d.point).sub(d.last).divideScalar(Math.max(dt,.001));if(!d.seen)d.velocity.set(0,0,0);d.last.copy(d.point);d.seen=true;
+   d.normal.set(0,1,0).applyQuaternion(d.rotation);d.heading.set(0,0,1).applyQuaternion(d.rotation);
+   if(group.current)group.current.userData.landingEligible=active&&(mode.current==="landing"||(mode.current==="flying"&&canLand(s.position,d.point,d.normal)));
+   if(landing.current.requested){
+    landing.current.requested=false;
+    if(active&&mode.current==="landed"){mode.current="docked";launchAge.current=0;}
+    else if(active&&mode.current==="flying"&&canLand(s.position,d.point,d.normal)){
+     mode.current="landing";landing.current.age=0;landing.current.start.copy(s.position);if(group.current)landing.current.rotation.copy(group.current.quaternion);
+    }
+   }
+   if(!active){mode.current="docked";launchAge.current=0;}
+   if(mode.current==="landing"){
+    const sequence=landing.current;sequence.age=reducedMotion?4.2:sequence.age+dt;
+    const progress=landingPose(sequence.start,d.point,d.normal,1.1275*scale+.045*pad.matrixWorld.getMaxScaleOnAxis(),sequence.age,s.position);
+    gearRef.current=progress.gear;engineRef.current=progress.power;s.velocity.copy(d.velocity);shotsRef.current=[];charge.current.cancel();
+    if(group.current){group.current.userData.launching=false;group.current.position.copy(s.position);group.current.quaternion.copy(sequence.rotation).slerp(d.rotation,landingEase(sequence.age/1.9));}
+    trackPositionRef?.current.copy(s.position);trackHeadingRef?.current.copy(d.heading);
+    if(progress.done){mode.current="landed";launchAge.current=0;keys.current.clear();}
+    scene.invalidate();return;
+   }
+   if(mode.current!=="flying"){
+    const departing=active&&mode.current!=="landed";
+    const cameraSettled=!launchCameraReady||launchCameraReady.current;
+    if(departing&&cameraSettled){mode.current="launching";launchAge.current+=dt;}
+    const progress=departing&&cameraSettled?launchProgress(launchAge.current,reducedMotion):{lift:0,gear:1,done:false};gearRef.current=progress.gear;engineRef.current=departing&&cameraSettled?Math.min(1,launchAge.current/.7):0;
+    s.position.copy(d.point).addScaledVector(d.normal,1.1275*scale+.045*pad.matrixWorld.getMaxScaleOnAxis()+progress.lift);s.velocity.copy(d.velocity);s.bank=0;s.lean=0;
+    if(group.current){group.current.userData.launching=mode.current==="launching";group.current.userData.launchAge=launchAge.current;group.current.visible=visible;group.current.position.copy(s.position);group.current.quaternion.copy(d.rotation);}
+    trackPositionRef?.current.copy(s.position);trackHeadingRef?.current.copy(d.heading);
+    shotsRef.current=[];charge.current.cancel();
+    if(progress.done){handoff.current.age=0;handoff.current.from.copy(d.rotation);mode.current="flying";s.yaw=Math.atan2(d.heading.x,d.heading.z);s.pitch=Math.asin(Math.max(-1,Math.min(1,d.heading.y)));}
+    scene.invalidate();return;
+   }
+  }else if(earthRadius>0){mode.current="flying";}
+  landing.current.requested=false;
+  gearRef.current=active?0:1;engineRef.current=active?1:0;
+  stepFlight(s,getFlightInput(keys.current,active),delta,{center:[cx,cy,cz],inner:0,outer:earthRadius?earthRadius*5.51:20});
+  if(active)for(const surface of samplePlanetContacts(scene.scene,s.position,scale*2.3,scene.clock.elapsedTime)){
+   const incoming=s.velocity.clone(),impact=resolveSaucerContact(s,surface.point,surface.normal,scale*2.3,surface.velocity);
+   if(impact&&impact.speed>.3&&crash.current.age>.45){
+    crash.current.serial++;crash.current.kind=impact.kind==="crash"?"crash":"bounce";crash.current.age=0;crash.current.point.copy(surface.point);crash.current.normal.copy(surface.normal);crash.current.velocity.copy(incoming);
+    if(impact.kind==="crash"){crashed.current=true;s.velocity.set(0,0,0);shotsRef.current=[];charge.current.cancel();break;}
+   }
+  }
+  if(group.current){
+   group.current.userData.launching=false;group.current.visible=visible&&!crashed.current;group.current.position.copy(s.position);
+   const transition=handoff.current;transition.age+=dt;transition.euler.set(-s.pitch+s.lean,s.yaw,s.bank,"YXZ");transition.target.setFromEuler(transition.euler);
+   blendLaunchAttitude(transition.from,transition.target,transition.age,group.current.quaternion,reducedMotion);
+  }
+  trackPositionRef?.current.copy(s.position);
+  trackHeadingRef?.current.set(Math.sin(s.yaw)*Math.cos(s.pitch),Math.sin(s.pitch),Math.cos(s.yaw)*Math.cos(s.pitch));
+  if(active||s.velocity.lengthSq()>.00001)scene.invalidate();
+ },-1);
+ return <><group name="piloted-saucer" ref={group} visible={visible}><UFOModel type={type} gearRef={gearRef} engineRef={engineRef} scale={scale} hover={!active&&earthRadius===0} reducedMotion={reducedMotion}/>
+ </group>
+ <CrashEffects ship={group} eventRef={crash} reducedMotion={reducedMotion}/>
+ <SaucerProjectiles ship={group} shotsRef={shotsRef} charge={charge} reducedMotion={reducedMotion} flight={state} active={active} visible={visible} scale={scale}/>
+ </>;
+}
