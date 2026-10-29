@@ -1,5 +1,15 @@
 # Change log
 
+## 2026-10-29 — Matte black hole and wide-disc lensing variant
+
+- Save the design studies and corrected hex-paneled sphere reference; build a matte-black geodesic shell with sealed backing and smaller instanced accretion fragments.
+- Add /black-hole inspection, camera presets, differential fast-to-slow orbits, pause/resume and reduced motion. Keep the Earth scene separate.
+- Preserve Version 1; add Version 2 with a wider seven-band disc, comparison controls and an optional secondary-disc lens image around the opaque core.
+- Replace smeared viewing-camera distortion with a clear orthographic disc atlas. Map it into upper/lower secondary arcs and filter cool graphite reflections from the lens image to address the reported edge-on blue artifact.
+- Extend offline asset review for both versions, preserve per-instance tint, batch repeated export geometry and fix repeated color-buffer allocation / relative output paths.
+
+Validation: all 129 scene tests pass. Full ESLint and production build passed after the final shader change. Offline model geometry reviewed; current WebGL lens appearance and GPU cost still require user/device review. No main-scene integration or physical gravity simulation included.
+
 ## 2026-10-29 — UFO Version 3, suspension and independent dragging
 
 - Build Version 3 from the selected angular design: six-sided hull, fitted beveled armor, six rim lights, hex canopy collar, engine and vent wells. Retain previous UFO versions and the main-scene default; add Version 3 to /ufo comparison controls.

@@ -385,3 +385,6 @@ Approved satellite checkpoint (2026-10-29): Jacob explicitly approved the rebuil
 
 
 Latest interaction checkpoint: UFO Version 3 is a separate selectable angular model, not a replacement of the main-scene default. Landing suspension and Test landing gear share the same analytic functions. Earth/Moon/text dragging uses exclusive nearest-object ownership, disabled during piloting. See docs/current-scene.md and CHANGELOG.md for current values and verification limits.
+
+
+Black-hole checkpoint: /black-hole provides original and wide-disc V2 variants. Preserve the genuinely paneled MATTE BLACK sphere (roughness1 / metalness0); user rejected the smooth void and rocky concept style. Current lens uses a top-down disc atlas and warm-light mask after reported smear/edge-on blue artifacts. Do not restore broad screenshot UV stretching. Keep original version and controls available; browser lens appearance/performance remain user-review items. Current settings are in components/three/black-hole/README.md and docs/current-scene.md.
