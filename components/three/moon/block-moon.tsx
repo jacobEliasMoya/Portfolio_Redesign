@@ -28,7 +28,7 @@ function parseMoon(raw: unknown): LunarVolume {
   return data;
 }
 /** Reusable survey-derived solid lunar surface; local +Z is the near-side face. */
-export function BlockMoon({ radius = .82, rotation = [0,0,0], reducedMotion=false,draggable=false }: { radius?: number; rotation?: [number,number,number]; reducedMotion?:boolean;draggable?:boolean }) {
+export function BlockMoon({ radius = .82, rotation = [0,0,0], reducedMotion=false,draggable=false,gravity=true,gravityPower=1 }: { radius?: number; rotation?: [number,number,number]; reducedMotion?:boolean;draggable?:boolean;gravity?:boolean;gravityPower?:number }) {
   const raw = useLoader(FileLoader,"/models/moon/block-moon.json?revision=solid-chunky-3");
   const data = useMemo(()=>parseMoon(raw),[raw]);
   const mesh = useRef<InstancedMesh>(null),interior=useRef<Group>(null),processedMarks=useRef(0);
@@ -78,23 +78,23 @@ export function BlockMoon({ radius = .82, rotation = [0,0,0], reducedMotion=fals
   return <group scale={radius/data.radius} rotation={rotation}><group ref={control}>
     <group ref={interior}><mesh><sphereGeometry args={[.70,48,32]} /><meshStandardMaterial color="#85838a" roughness={.95} side={DoubleSide} transparent={false} /></mesh>
     <mesh><primitive object={skin} attach="geometry"/><meshStandardMaterial vertexColors roughness={.94} metalness={0} side={DoubleSide} transparent={false}/></mesh>
-    </group><instancedMesh ref={mesh} args={[undefined,undefined,data.sizes.length]} frustumCulled={false}>
+    </group><instancedMesh name="tour-moon" userData={{projectileGravity:{enabled:gravity,power:gravityPower,radius:data.radius,kind:"moon"}}} ref={mesh} args={[undefined,undefined,data.sizes.length]} frustumCulled={false}>
       <primitive object={geometry} attach="geometry" /><meshStandardMaterial roughness={.88} metalness={.02} transparent={false} onBeforeCompile={applyImpactGlow} customProgramCacheKey={()=>"moon-impact-glow-v3"} />
     </instancedMesh>
     <LunarLandingPad moon={mesh}/>
     <LunarFlag moon={mesh} reducedMotion={reducedMotion}/>
-    <ImpactSmoke earth={mesh} surfaceRadius={data.radius} reducedMotion={reducedMotion}/>
+    <ImpactSmoke earth={mesh} surfaceRadius={data.radius} kind="moon" reducedMotion={reducedMotion}/>
   </group></group>;
 }
 
 /** The same orbital phase drives position and yaw: exactly one spin per revolution. */
-export function OrbitingMoon({ earthRadius, enabled, reducedMotion, draggable=false, center = [0,.35,-9] }: {
-  earthRadius: number; enabled: boolean; reducedMotion: boolean; draggable?:boolean; center?: [number,number,number];
+export function OrbitingMoon({ earthRadius, enabled, reducedMotion, draggable=false, center = [0,.35,-9],gravity=true,gravityPower=1 }: {
+  earthRadius: number; enabled: boolean; reducedMotion: boolean; draggable?:boolean; center?: [number,number,number];gravity?:boolean;gravityPower?:number;
 }) {
   const group = useRef<Group>(null), reveal = useRef<Group>(null), elapsed = useRef(0), amount = useRef(0);
   const released=useRef<ReturnType<typeof releaseMoon>|null>(null);
   const moonRadius = earthRadius * .273;
-  const distance = earthRadius * 2.8 + moonRadius;
+  const distance = earthRadius * 3.6 + moonRadius;
   const initial = getMoonOrbitPose(0,distance);
   useFrame((state,delta)=>{
     const dt=Math.min(delta,.1);
@@ -116,7 +116,7 @@ export function OrbitingMoon({ earthRadius, enabled, reducedMotion, draggable=fa
   },-2);
   return <group position={center} rotation={[MOON_ORBIT.inclination,0,MOON_ORBIT.node]}>
     <group ref={group} position={initial.position as [number,number,number]} rotation={[0,initial.yaw,0]}>
-      <group ref={reveal} scale={0}><BlockMoon radius={moonRadius} reducedMotion={reducedMotion} draggable={draggable&&enabled} /></group>
+      <group ref={reveal} scale={0}><BlockMoon radius={moonRadius} reducedMotion={reducedMotion} draggable={draggable&&enabled} gravity={gravity} gravityPower={gravityPower}/></group>
     </group>
   </group>;
 }

@@ -1,4 +1,117 @@
+Opening camera restored: tour progress0 is a fixed Overview at [0,0,22], aimed at [0,.35,-9], matching the original pre-tour camera. It stays there through loading and after readiness until scroll/Next advances to Jake, Space, California and Moon. Back/reset return to Overview. Tour button stepping is gated on readiness like wheel input. Wide landmark views remain. Four tour tests cover stationary opening despite moving landmarks, forward/reverse stops and path clearance; full lint/build pass. Live animation framing still awaits visual review.
+
+Tour refinement: stops are now Jake -> Space -> California -> Moon. Jake and Space have separate word-center anchors that follow text orbit/drag; wide camera distance is preserved. TOUR_STOPS is an ordered key/label list with automatically distributed progress and generic sampling, so future text/place anchors can be inserted without rewriting segment interpolation. New anchors must also be supplied/updated from their scene objects. Three focused tour tests and full lint pass; production build passes. Live framing remains unverified.
+
+Tour and projectile gravity update (2026-10-29): non-pilot scroll now visits Jake, California and Moon, with Back/Next selecting those stops. Targets follow the moving text, rotating Earth and orbiting Moon. Camera stand-off is max(22, EarthRadius*3.8) world units to preserve the earlier wide view; spherical travel and body clearance avoid crossing terrain. Live camera framing still needs visual review.
+
+Earth, BlockMoon/OrbitingMoon and BlackHole/BlackHoleV2 expose gravity=true and gravityPower=1 by default. Set gravity=false to disable a model, gravityPower=0 for no pull, or e.g. gravityPower=1.5 for stronger pull. Softened inverse-square fields follow model world transforms and skip hidden/destroyed planets; total acceleration is bounded at80. Fired bolts use 120Hz maximum integration steps and swept collision checks along each curved segment. Existing damage and charge behavior remain. All166 tests pass, including gravity strength/toggles, frame-rate consistency and collision checks.
+
 # Change log
+
+## 2026-10-29 — Softer chase-camera banking
+
+- Reduce orientation-follow damping from8 to4 so bank/roll transitions build and settle more gently, matching the camera's positional follow. Preserve ship response, full rolls, inverted recovery and reduced motion.
+- Six camera tests and targeted lint pass.
+
+## 2026-10-29 — Memory audit, local flight axes and rolling chase camera
+
+- Close the rim-plasma instanced-buffer cleanup gap; explicitly dispose both owned meshes and deduplicate shared resources. Skip idle effect uploads and reuse projectile target/flight/camera scratch storage.
+- Add a repeatable lifecycle audit across nine model/effect factories. Ninety measured cycles release all1590 tracked resources exactly once; settled forced GC shows zero retained typed-array buffer growth. Browser/GPU profiling remains outside this audit.
+- Remap Q/E from strafe to full rolls, make all steering/translation ship-relative using a normalized orientation quaternion, and align chase-camera up/boom with the craft. Preserve full lunar launch attitude, safe camera clearance and exploration's upright view.
+- Add inverted/sideways flight, arbitrary scene-rotation equivalence, camera recovery, idle-effect and resource disposal regressions. All161 tests and production build pass; lint warning fixed and rechecked.
+
+## 2026-10-29 — More space between Earth and Moon
+
+- Increase orbit distance from EarthRadius*2.8 + MoonRadius to EarthRadius*3.6 + MoonRadius (about26% farther center-to-center and44% more surface gap).
+- Preserve Moon size,100-second orbital period, tidal lock, inclination and pad/flag attachment. Fifteen relevant tests, targeted lint and production build pass.
+
+## 2026-10-29 — Smooth rim-plasma direction changes
+
+- Ease each emitter's orientation along the shortest rotation arc when adding/reversing steering, lift or other controls. Use the eased axis for both lobe orientation and pulse offsets.
+- Soften ignition/fade to blend port transfers. Keep flight response unchanged and direct input under reduced motion.
+- Five focused propulsion tests pass, including monotonic convergence, no initial snap, normalized rotation and 30/60Hz equivalence. Targeted lint and production build pass; live feel remains user-review dependent.
+
+## 2026-10-29 — Broad directional rim plasma
+
+- Add cyan-blue plasma bursts with white cores to the angular UFO's actual six rim emitters, driven by thrust/reverse, strafe, turning, lift/pitch and velocity-opposing braking. Keep existing takeoff rings and flight physics.
+- Use broad tapered 3D lobes and three overlapping pulses per emitter, damp ignition/shutdown and omit coast-only trails. Static input response under reduced motion; suppress directional drive during parked/launch/landing states.
+- Reuse two instanced batches, exclude effects from crash pooling and dispose owned resources. No new lights, textures or packages.
+
+Validation: all151 tests, targeted lint after the render-resource correction, and final production build pass. Actual rim alignment checked by ray tests. Browser shader/visual review remains pending.
+
+## 2026-10-29 — Circular bearing around rotating cockpit
+
+- Replace angular V3's hexagonal collar/gasket with circular profiled rings and clip surrounding armor to a circular opening. Allow clearance for the entire rotating faceted frame rather than only its initial pose.
+- Lower the cockpit floor below the glass sill. Preserve dome geometry/rotation, outer hull, weapon and other model variants, sharing the existing material batches.
+- All147 tests, lint and production build pass. New actual-geometry regression samples the gasket in 96 directions and checks dome sweep/armor clearance. Save and inspect exact-model offline views; live motion review remains pending.
+
+## 2026-10-29 — Rotating cannon focusing jaws
+
+- Add .9rad/s forward-axis rotation to the shared three-jaw cannon on every UFO. Preserve fixed mounting saddle, recessed aperture and muzzle/charge/bolt alignment. Respect reduced motion and use delta-based group transforms.
+- Separate only jaws and energy accents into two material batches, retaining existing geometry and crash/black-hole consumption data. Material disposal deduplicates shared cannon resources.
+- All146 tests pass, including multiple-turn muzzle invariance, fixed forward axis, 30/60Hz equivalence and reduced-motion freeze. Live animation review remains pending.
+
+## 2026-10-29 — Shared extended cannon and rotating angular dome
+
+- Extend the alien cannon forward by .16 model units, retaining a hull-embedded saddle, and apply the same geometry and muzzle convention to Classic, Hexagonal, Reference and V3. Preserve charging appearance, blaster shots and damage. Add Classic to the inspection selector.
+- Move V3 glass and dome frame into an independent dome group; drive that group at 2.34 radians/second with the existing engine ramp/reduced-motion freeze. Keep its outer hull, vents, lights, cannon and gear steady.
+- Keep vents attached to the hull. Update multi-angle regression to verify hull/vent alignment independently of dome rotation, with a focused ray query that avoids hidden landing-gear hits.
+- Save updated V3/reference exact-model renders; preserve and present the original classic/hexagonal/evolution concept sheets for design discussion.
+
+Validation: all 145 scene tests, full lint and production build pass; Classic selector also passes targeted lint and the final build. Browser visual/motion review remains pending; offline renders validate model geometry only.
+
+## 2026-10-29 — Underside vents follow the spinning disc
+
+- Move V3's three vent housings, dark wells and louvers from the fixed cockpit batch into the rotating disc so they stay aligned with their armor openings. Preserve fixed landing gear and cannon.
+- Add a regression that ray-checks all three louvers at multiple disc angles and confirms gear does not inherit rotor rotation. Full lint and production build pass.
+
+## 2026-10-29 — Integrated alien cannon
+
+- Replace V3's perched barrel with a low-mounted hex saddle, recessed cyan aperture and three swept focusing jaws. Keep the emitter fixed as armor rotates.
+- Share a V3 muzzle position for charge and bolt placement; preserve charge appearance, projectile damage and other UFO variants.
+- Batch into existing materials: 17 total draws / 12,394 triangles. Save six exact-model review views, checking front/side/rear/three-quarter. Adapt offline rendering to Blender 5's renamed Eevee identifier while retaining Blender 4 support.
+
+Validation: all 143 tests, full lint and production build pass. New ray test checks the recessed aperture, clear forward muzzle and independence from rotating disc. Offline renders verify geometry; live browser appearance remains pending.
+
+## 2026-10-29 — Earth survives multiple charged shots
+
+- Increase Earth durability from 20 to 60 damage: three full-charge shots instead of one, keeping visible accumulated dents/scorch between hits. Moon remains at 12; bolt damage, charging and breakup timing remain unchanged.
+- Read durability from shared constants in the flight manual and distinguish projectile damage from planet durability.
+- Nineteen targeted collision/explosion tests pass, including repeat full-charge hits on already-dented Earth and unchanged lunar behavior.
+
+## 2026-10-29 — Crisp fired blaster bolts
+
+- Replace fired teardrop plasma with a slim cyan blaster pulse, rounded leading cap, narrow white core and short fading rear taper. Charged shots are moderately thicker/longer with a restrained violet edge.
+- Remove traveling-bolt wobble/breathing; keep the existing compact charging orb, its filament shader and charge pulse unchanged. Firing, velocity, damage, swept collisions, pooling and impact bursts retain their existing behavior.
+- Reuse the existing projectile batches; no textures, lights, packages or additional draws.
+
+Validation: all 142 scene tests, changed-file lint, TypeScript and production build pass, including new blaster silhouette and independent charging-shader coverage. Live visual review remains pending.
+
+## 2026-10-29 — Impact plume differentiation and contained gear retraction
+
+- Replace uniformly spaced smoke rings with seeded uneven dust fronts and fourteen central rising billows on Earth. Charged hits have broader spread, larger puffs and staggered emission.
+- Give Moon impacts their own neutral-gray, smaller, faster dust arcs with short lifetimes and radial rise/fall. Retain the original lunar tile debris, damage and crater marks.
+- Keep eight pooled impact slots, forty puffs each and one instanced draw per body, with no new textures, lights or packages. Reuse sample storage inside the update loop; reduced motion skips plumes.
+- Correct shared landing gear retraction: shorten toward the underside mounting plane instead of translating upward through the hull. Preserve full-deployment foot depth and suspension; fully retracted gear collapses and hides.
+
+Validation: all 140 scene tests, full lint and production build pass, including actual V3 gear bounds throughout retraction, suspension/contact continuity, plume separation, charged timing/spread, lunar falloff and finite polar motion. Live plume appearance and gear animation remain user-review items.
+
+## 2026-10-29 — Consistent Version 3 UFO reflections
+
+- Confirm both main space scene and the preview select Version 3. The preview previously supplied studio reflections that the main scene lacked.
+- Share the preview's three reflection cards and capture them once inside Version 3. Apply the captured map only to the model's standard/physical materials and restore previous maps on cleanup, without changing the main scene environment or planet lighting.
+- Retain the preview environment for other UFO variants; Version 3 uses its own identical reflection setup on both routes.
+
+Validation: full lint, TypeScript, production build and nine focused UFO/crash/suspension tests pass. Live browser visual comparison remains pending; directional lighting and framing still differ between scenes.
+
+## 2026-10-29 — Version 3 UFO in the main space scene
+
+- Increase lunar orbital speed and Earth idle rotation by 50%: 100-second orbit and .0525 radians/second spin, preserving tidal locking and reduced-motion behavior.
+
+- Select the angular Version 3 UFO explicitly in the main scene's FlightCompanion, matching the default UFO inspection model.
+- Retain the existing ship scale and shared flight, lunar launch/landing, suspension, weapons and crash-effect integration.
+
+Validation: full lint, separate TypeScript check and both focused test runs pass (14 UFO/landing/crash tests and 13 orbit/rotation/landing tests). Production compilation succeeded; the full build stopped when its TypeScript child process was denied with spawn EPERM. Tests passed using in-process isolation after the default test runner encountered the same process-launch restriction. Live browser appearance and motion feel remain unverified.
 
 ## 2026-10-29 — Matte black hole and wide-disc lensing variant
 

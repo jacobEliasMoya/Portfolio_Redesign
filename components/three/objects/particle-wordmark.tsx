@@ -46,7 +46,12 @@ export function ParticleWordmark({ shipPositionRef, piloting, reducedMotion, rep
     const scatter=data.scales.map((_,i)=>[(noise(i+3)-.5)*4,(noise(i+5)-.5)*3,(noise(i+7)-.5)*3]);
     const shades=data.scales.map((_,i)=>(data.fragments[i]===1?.45:.7)+noise(i+19)*.25);
     const angles=targets.map(p=>Math.atan2(p[0],p[2]+9));
-    return { scatter,shades,angles,radius, scale, ordinal, targets, distances, letters: letters.length, complete: titleDuration(letters.length) };
+    const wordFocus=(start:number,end:number)=>{
+      const center=[0,0,0];for(let letter=start;letter<end;letter++)for(let axis=0;axis<3;axis++)center[axis]+=data.letterCenters[letter*3+axis]/(end-start);
+      return wrapPoint(center[0],center[1],center[2],scale,radius);
+    };
+    const tourFocus=wordFocus(0,4),spaceFocus=wordFocus(data.text.indexOf("Space"),data.text.length);
+    return { tourFocus,spaceFocus,scatter,shades,angles,radius, scale, ordinal, targets, distances, letters: letters.length, complete: titleDuration(letters.length) };
   }, [data, size.width, size.height]);
   const mesh = useRef<InstancedMesh>(null), elapsed = useRef(0), pulseTime = useRef(0), done = useRef(false), phase = useRef<IntroPhase | null>(null);
   const destroyed=useDestructibleInstances(mesh,{blast:.35,padding:.15,dynamic:true,mode:"explode"});
@@ -56,12 +61,13 @@ export function ParticleWordmark({ shipPositionRef, piloting, reducedMotion, rep
   const repels=useRef(new Float32Array(data.scales.length*3)),repelTarget=useRef([0,0,0]);
   const strengths = useRef(new Float32Array(data.scales.length)), pulls = useRef(new Float32Array(data.scales.length * 3));
   const cursor = useRef({ x: 0, y: 0, active: false });
-  const objects = useMemo(() => ({ transform: new Object3D(), color: new Color(), ray: new Raycaster(), screen: new Vector2(), point: new Vector3(), hit: new Vector3() }), []);
+  const objects = useMemo(() => ({ transform: new Object3D(), color: new Color(), ray: new Raycaster(), screen: new Vector2(), point: new Vector3(), hit: new Vector3(),tourFocus:new Vector3(),spaceFocus:new Vector3() }), []);
   const geometry = useMemo(() => {
     const original=new RoundedBoxGeometry(data.cubeSize,data.cubeSize,data.cubeSize,1,data.cubeSize*.1);
     const indexed=mergeVertices(original);original.dispose();return indexed;
   }, [data.cubeSize]);
   useEffect(()=>{mesh.current?.instanceMatrix.setUsage(DynamicDrawUsage);},[]);
+  useEffect(()=>{const object=mesh.current;if(!object)return;object.userData.tourFocus=objects.tourFocus;object.userData.tourSpaceFocus=objects.spaceFocus;return()=>{delete object.userData.tourFocus;delete object.userData.tourSpaceFocus;};},[objects]);
   useEffect(() => () => geometry.dispose(), [geometry]);
   useEffect(() => { onPrepared(); }, [onPrepared]);
   useEffect(() => { elapsed.current = 0; pulseTime.current = 0; orbitTime.current = 0;orbitDrag.current={active:false,target:0,value:0,angle:0}; done.current = false; phase.current = null; strengths.current.fill(0); pulls.current.fill(0); repels.current.fill(0); invalidate(); }, [replay, invalidate]);
@@ -107,6 +113,8 @@ export function ParticleWordmark({ shipPositionRef, piloting, reducedMotion, rep
     if (done.current) { pulseTime.current += dt; if (!reducedMotion&&!orbitDrag.current.active) orbitTime.current += dt; }
     orbitDrag.current.value=reducedMotion?orbitDrag.current.target:MathUtils.damp(orbitDrag.current.value,orbitDrag.current.target,18,dt);
     const orbitAngle = getTextOrbitAngle(orbitTime.current)+orbitDrag.current.value, orbitCos=Math.cos(orbitAngle), orbitSin=Math.sin(orbitAngle);
+    objects.tourFocus.set(layout.tourFocus[0]*orbitCos+(layout.tourFocus[2]+9)*orbitSin,layout.tourFocus[1],-layout.tourFocus[0]*orbitSin+(layout.tourFocus[2]+9)*orbitCos-9);
+    objects.spaceFocus.set(layout.spaceFocus[0]*orbitCos+(layout.spaceFocus[2]+9)*orbitSin,layout.spaceFocus[1],-layout.spaceFocus[0]*orbitSin+(layout.spaceFocus[2]+9)*orbitCos-9);
     const magnetic=ready&&!reducedMotion&&!orbitDrag.current.active&&cursor.current.active;
     for (let i = 0; i < data.scales.length; i++) {
       if(destroyed.current.has(i))continue;
@@ -138,7 +146,7 @@ export function ParticleWordmark({ shipPositionRef, piloting, reducedMotion, rep
     if (ready && !done.current) { done.current = true; onComplete(); }
     if (!reducedMotion || !ready || Math.abs(orbitDrag.current.value-orbitDrag.current.target)>.0001) state.invalidate();
   });
-  return <instancedMesh visible={startRequested} ref={mesh} args={[undefined, undefined, data.scales.length]} frustumCulled={false}>
+  return <instancedMesh name="tour-jake" visible={startRequested} ref={mesh} args={[undefined, undefined, data.scales.length]} frustumCulled={false}>
     <primitive object={geometry} attach="geometry" /><meshStandardMaterial color="#f0f1f5" metalness={0.48} roughness={0.3} />
   </instancedMesh>;
 }

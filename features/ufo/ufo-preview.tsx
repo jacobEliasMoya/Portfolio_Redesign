@@ -3,7 +3,8 @@ import { AdaptiveQuality } from "@/components/three/canvas/adaptive-quality";
 import { Component, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Canvas } from "@react-three/fiber";
-import { Environment, Lightformer, OrbitControls } from "@react-three/drei";
+import { Environment, OrbitControls } from "@react-three/drei";
+import {SaucerReflectionCards} from "@/components/three/ufo/saucer-reflections";
 import { PilotMenu } from "@/components/three/ufo/pilot-menu";
 import { PilotSaucer } from "@/components/three/ufo/pilot-saucer";
 import {GearTestModel} from "@/components/three/ufo/gear-test-model";
@@ -21,18 +22,14 @@ export function UFOPreview(){
   return <main style={{minHeight:"100dvh",background:"#000",color:"#eee",padding:"1.5rem"}}>
     <Link href="/">← Back to Earth</Link><h1>Hexagonal saucer</h1><p>Open the flight deck to pilot, or drag to inspect the model. Scroll to zoom.</p>
     <div style={{display:"flex",gap:".6rem",flexWrap:"wrap"}}>{Object.keys(views).map((name)=><button key={name} aria-pressed={view===name} onClick={()=>setView(name)} style={{padding:".6rem",minHeight:44,border:"1px solid #555",background:view===name?"#eee":"#181818",color:view===name?"#000":"#eee"}}>{name}</button>)}<button disabled={reducedMotion} aria-pressed={hover&&!reducedMotion} onClick={()=>setHover((value)=>!value)} style={{padding:".6rem",background:"#181818",color:"#eee",border:"1px solid #555"}}>Hover: {hover&&!reducedMotion?"on":"off"}</button></div>
-    <div style={{display:"flex",gap:".6rem",marginTop:".75rem"}}>{([["v3","Version 3 — Angular"],["reference","Reference rebuild"],["hexagonal","Current hexagonal"]] as const).map(([value,label])=><button key={value} disabled={pilot} aria-pressed={type===value} onClick={()=>setType(value)} style={{padding:".65rem",minHeight:44,background:type===value?"#a8e6e8":"#181818",color:type===value?"#10191b":"#eee",border:"1px solid #566"}}>{label}</button>)}</div>
+    <div style={{display:"flex",gap:".6rem",marginTop:".75rem"}}>{([["v3","Version 3 — Angular"],["reference","Reference rebuild"],["hexagonal","Current hexagonal"],["classic","Classic"]] as const).map(([value,label])=><button key={value} disabled={pilot} aria-pressed={type===value} onClick={()=>setType(value)} style={{padding:".65rem",minHeight:44,background:type===value?"#a8e6e8":"#181818",color:type===value?"#10191b":"#eee",border:"1px solid #566"}}>{label}</button>)}</div>
     <button disabled={pilot} onClick={()=>setGearTest(value=>value+1)} style={{padding:".65rem",minHeight:44,marginTop:".75rem",background:"#18272b",color:"#b9f2ec",border:"1px solid #566"}}>Test landing gear</button>
     <Boundary><div style={{height:"72dvh",minHeight:320,position:"relative"}} aria-label="Hexagonal silver flying saucer with cyan cockpit, rim lights and underside engine.">
       <Canvas key={`${view}-${pilot}`} frameloop="demand" dpr={1} camera={{position:pilot?[0,4,14]:views[view],fov:42}} fallback={<p>WebGL is unavailable.</p>}>
         <AdaptiveQuality reducedMotion={reducedMotion}/>
         <color attach="background" args={["#000"]}/><ambientLight intensity={1.4}/>
         <directionalLight position={[-4,6,5]} intensity={4}/><directionalLight position={[5,1,-4]} intensity={2} color="#a7d9ef"/><directionalLight position={[1,-5,3]} intensity={1.8}/>
-        <Environment resolution={128} frames={1}>
-          <Lightformer position={[-4,5,2]} rotation={[Math.PI/2,0,0]} scale={[8,3,1]} intensity={3}/>
-          <Lightformer position={[4,2,-2]} rotation={[0,-Math.PI/2,0]} scale={[3,6,1]} color="#b3d8ef" intensity={2}/>
-          <Lightformer position={[0,1,5]} rotation={[0,Math.PI,0]} scale={[7,1,1]} intensity={1.5}/>
-        </Environment>
+        {type!=="v3"&&<Environment resolution={128} frames={1}><SaucerReflectionCards/></Environment>}
         {pilot?<PilotSaucer type={type} active reducedMotion={reducedMotion} scale={.45}/>:<GearTestModel type={type} serial={gearTest} hover={hover} reducedMotion={reducedMotion}/>}
         <OrbitControls enabled={!pilot} target={[0,.2,0]} enablePan={false} minDistance={3.2} maxDistance={14} enableDamping={!reducedMotion}/>
       </Canvas>

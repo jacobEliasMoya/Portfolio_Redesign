@@ -1,4 +1,23 @@
 import {AdditiveBlending,LatheGeometry,ShaderMaterial,Vector2} from "three";
+
+/** Slim blaster pulse: constant-width body, rounded nose and short tapered wake (+Z forward). */
+export function createBlasterEnvelope(){
+ const geometry=new LatheGeometry([[0,-1.2],[.025,-1.05],[.065,-.8],[.105,-.45],[.11,.55],[.10,.67],[.075,.76],[.04,.81],[0,.83]].map(p=>new Vector2(...p)),12);
+ geometry.rotateX(Math.PI/2);return geometry;
+}
+export function createBlasterMaterial(){return new ShaderMaterial({
+ transparent:true,depthWrite:false,blending:AdditiveBlending,toneMapped:false,
+ vertexShader:`attribute float shotPower;varying float vPower;varying vec3 vLocal;varying vec3 vNormal;varying vec3 vView;
+ void main(){vPower=shotPower;vLocal=position;vec4 view=modelViewMatrix*instanceMatrix*vec4(position,1.);
+ vNormal=normalize(normalMatrix*mat3(instanceMatrix)*normal);vView=-view.xyz;gl_Position=projectionMatrix*view;}`,
+ fragmentShader:`varying float vPower;varying vec3 vLocal;varying vec3 vNormal;varying vec3 vView;
+ void main(){
+ float edge=pow(1.-abs(dot(normalize(vNormal),normalize(vView))),2.);
+ float tail=smoothstep(-1.2,-.42,vLocal.z);
+ vec3 color=mix(vec3(.06,.72,1.),vec3(.43,.30,1.),edge*vPower*.30);
+ gl_FragColor=vec4(color*1.5,tail*(.28+.38*edge));
+ }`
+});}
 /** Teardrop silhouette: full rounded leading head, drawn-out pointed trailing tip (+Z forward). */
 export function createPlasmaEnvelope(){
  const geometry=new LatheGeometry([[0,-2.25],[.015,-1.95],[.05,-1.55],[.11,-1.1],[.22,-.6],[.36,-.18],[.48,.13],[.54,.38],[.52,.58],[.44,.79],[.29,.97],[.12,1.06],[0,1.08]].map(p=>new Vector2(...p)),16);

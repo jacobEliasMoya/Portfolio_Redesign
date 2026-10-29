@@ -1,10 +1,10 @@
 "use client";
 import {useEffect,useRef,type RefObject} from "react";
-import {clampTour,wheelTourProgress} from "@/components/three/animation/scroll-tour.mjs";
+import {clampTour,stepTourStops,wheelTourProgress} from "@/components/three/animation/scroll-tour.mjs";
 export function useScrollTour(canvas:HTMLCanvasElement,enabled:RefObject<boolean>,steps:number,reset:number,invalidate:()=>void,active:boolean){
  const progress=useRef(0),previous=useRef({steps,reset});
  useEffect(()=>{
-  if(active)progress.current=previous.current.reset!==reset?0:clampTour(progress.current+(steps-previous.current.steps)*.08);
+  if(active)progress.current=previous.current.reset!==reset?0:stepTourStops(progress.current,steps-previous.current.steps);
   previous.current={steps,reset};invalidate();
  },[steps,reset,invalidate,active]);
  useEffect(()=>{

@@ -86,7 +86,11 @@ area("rear edge",(0,3,-5),1100,3,(.8,.9,1))
 area("screen reflection",(-1,3,6),150,3,(1,1,1),shape="RECTANGLE",size_y=.5)
 
 scene=bpy.context.scene
-scene.render.engine="BLENDER_EEVEE_NEXT"
+try:
+    scene.render.engine="BLENDER_EEVEE_NEXT"
+except TypeError:
+    # Blender 5 renamed the Eevee identifier; retain Blender 4 compatibility.
+    scene.render.engine="BLENDER_EEVEE"
 scene.render.resolution_x=1440;scene.render.resolution_y=1000;scene.render.resolution_percentage=100
 scene.render.image_settings.file_format="PNG"
 scene.world.color=(.025,.025,.025)

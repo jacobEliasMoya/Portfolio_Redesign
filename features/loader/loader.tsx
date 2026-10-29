@@ -32,7 +32,7 @@ export function LoaderExperience() {
       <button disabled={!ready} aria-label={piloting?"Zoom out":"Move backward on scene tour"} onClick={() => setZoomSteps((n) => n - 1)}>{piloting?"−":"Back"}</button>
       <button disabled={!ready} aria-label={piloting?"Reset zoom":"Return to start of scene tour"} onClick={() => setZoomReset((n) => n + 1)}>Reset</button>
     </div>
-    {!piloting&&ready&&<p className="loader-tour-hint">SCROLL TO EXPLORE · BACK / NEXT TO TRAVEL</p>}
+    {!piloting&&ready&&<p className="loader-tour-hint">JAKES SPACE · CALIFORNIA · MOON · SCROLL OR USE BACK / NEXT</p>}
     <div className="loader-bottom" aria-label="Scene loading">
       <span className="loader-accessible-status" role="status">{failed ? "Scene loading failed" : ready ? "Scene ready. Scroll to travel through the scene; drag to rotate Earth. A survey-derived Moon orbits with the same face always turned toward Earth." : earthReady ? "Forming Jakes Space" : "Preparing Earth"}</span>
       <div className="loader-progress" role="progressbar" aria-label="Scene asset download" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}><span style={{width: `${percent}%`}} /></div>

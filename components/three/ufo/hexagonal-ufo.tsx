@@ -7,6 +7,7 @@ import {applyLandingGear} from "./landing-suspension.mjs";
 import {SaucerPropulsion} from "./saucer-propulsion";
 import {HexagonalHull} from "./hexagonal-hull";
 import {createHexCanopy} from "./hexagonal-canopy-geometry.mjs";
+import {AlienCannon} from "./alien-cannon";
 export function HexagonalUFO({scale=1,position=[0,0,0],rotation=[0,0,0],hover=true,reducedMotion=false,gearRef,engineRef,suspensionRef}:ComponentProps<typeof ClassicUFO>&{gearRef?:RefObject<number>;engineRef?:RefObject<number>;suspensionRef?:RefObject<number>}){
  const halos=useRef<InstancedMesh>(null),power=useRef(0);
  const gear=useRef<Group>(null);
@@ -58,10 +59,6 @@ export function HexagonalUFO({scale=1,position=[0,0,0],rotation=[0,0,0],hover=tr
   <mesh><primitive object={canopy.frame} attach="geometry"/><meshStandardMaterial color="#a5aaa5" roughness={.5} metalness={.55}/></mesh>
   <mesh position={[0,.49,0]}><cylinderGeometry args={[.70,.70,.025,12]}/><meshStandardMaterial color="#08171d"/></mesh>
   <mesh position={[0,.63,-.15]}><boxGeometry args={[.23,.26,.14]}/><meshStandardMaterial color="#162c35" roughness={.9}/></mesh>
-  <group position={[0,.24,2.20]} rotation={[Math.PI/2,0,0]}>
-   <mesh><cylinderGeometry args={[.225,.26,.32,8]}/><meshStandardMaterial color="#4e5455" roughness={.7} metalness={.45}/></mesh>
-   <mesh position={[0,.2,0]}><cylinderGeometry args={[.175,.20,.12,8]}/><meshStandardMaterial color="#28383f" roughness={.5} metalness={.5}/></mesh>
-   <mesh position={[0,.276,0]}><cylinderGeometry args={[.11,.11,.022,10]}/><meshStandardMaterial color="#90fff3" emissive="#24dbc7" emissiveIntensity={1.2}/></mesh>
-  </group>
+  <AlienCannon reducedMotion={reducedMotion}/>
  </group></group>;
 }

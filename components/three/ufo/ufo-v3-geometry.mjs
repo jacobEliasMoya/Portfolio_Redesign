@@ -11,11 +11,12 @@ function clip(poly,n,c,inside=true){const out=[];
 }
 function area(poly){return Math.abs(poly.reduce((s,p,i)=>{const q=poly[(i+1)%poly.length];return s+p[0]*q[1]-q[0]*p[1];},0))/2;}
 /** Difference against a convex hexagon; retained pieces are disjoint. */
-function subtractHex(poly,radius,center){
- let intersection=poly;for(const n of planes)intersection=clip(intersection,n,radius*COS30+center[0]*n[0]+center[1]*n[1]);
+function subtractHex(poly,radius,center,sides=6){
+ const boundaries=sides===6?planes:Array.from({length:sides},(_,i)=>{const a=(i+.5)*Math.PI*2/sides;return [Math.cos(a),Math.sin(a)];}),apothem=radius*Math.cos(Math.PI/sides);
+ let intersection=poly;for(const n of boundaries)intersection=clip(intersection,n,apothem+center[0]*n[0]+center[1]*n[1]);
  if(intersection.length<3||area(intersection)<1e-8)return [poly];
  let remaining=poly;const outside=[];
- for(const n of planes){if(remaining.length<3)break;const c=radius*COS30+center[0]*n[0]+center[1]*n[1],part=clip(remaining,n,c,false);if(part.length>=3&&area(part)>1e-5)outside.push(part);remaining=clip(remaining,n,c,true);}
+ for(const n of boundaries){if(remaining.length<3)break;const c=apothem+center[0]*n[0]+center[1]*n[1],part=clip(remaining,n,c,false);if(part.length>=3&&area(part)>1e-5)outside.push(part);remaining=clip(remaining,n,c,true);}
  return outside;
 }
 export function polygonRadius(x,z){return Math.max(...planes.map(n=>x*n[0]+z*n[1]))/(V3_RADIUS*COS30);}
@@ -23,13 +24,13 @@ export function v3Height(x,z,side=1){const t=Math.max(0,Math.min(1,polygonRadius
  return side>0?.48-.38*Math.pow(t,1.65):-.39+.26*Math.pow(t,1.6);
 }
 export function createV3PanelLayout(side=1){
- const width=side>0?.43:.53,radius=width/Math.sqrt(3),holes=side>0?[[.86,[0,0]]]:[[.67,[0,0]],...Array.from({length:3},(_,i)=>{const a=i*Math.PI*2/3;return [.305,[Math.sin(a)*1.22,Math.cos(a)*1.22]];})],panels=[];
+ const width=side>0?.43:.53,radius=width/Math.sqrt(3),holes=side>0?[[.94,[0,0],48]]:[[.67,[0,0],6],...Array.from({length:3},(_,i)=>{const a=i*Math.PI*2/3;return [.305,[Math.sin(a)*1.22,Math.cos(a)*1.22],6];})],panels=[];
  for(let row=-9;row<=9;row++)for(let col=-9;col<=9;col++){
   const x=(col+(Math.abs(row)%2)*.5)*width,z=row*radius*1.5;
   let poly=Array.from({length:6},(_,i)=>{const a=Math.PI/6+i*Math.PI/3;return [x+Math.cos(a)*radius,z+Math.sin(a)*radius];});
   for(const n of planes)poly=clip(poly,n,(V3_RADIUS-.065)*COS30);
   if(poly.length<3||area(poly)<.006)continue;
-  let pieces=[poly];for(const [r,c] of holes)pieces=pieces.flatMap(p=>subtractHex(p,r,c));
+  let pieces=[poly];for(const [r,c,sides] of holes)pieces=pieces.flatMap(p=>subtractHex(p,r,c,sides));
   for(const piece of pieces){if(area(piece)<.003)continue;const cx=piece.reduce((s,p)=>s+p[0],0)/piece.length,cz=piece.reduce((s,p)=>s+p[1],0)/piece.length;
    // A small even reveal separates the armor instead of stacking arbitrary overlaps.
    panels.push({points:piece.map(p=>[cx+(p[0]-cx)*.975,cz+(p[1]-cz)*.975]),side,shade:Math.abs((row*13+col*7)%5),relief:(Math.sin(row*13.7+col*31.3)+1)*.007});

@@ -17,5 +17,6 @@ export function launchCompression(age,reducedMotion=false){
 /** Compression shortens legs by the same distance the body lowers, anchoring the feet. */
 export function applyLandingGear(group,deployment,compression=0){
  if(!group)return;const amount=Math.max(0,Math.min(1,deployment)),load=Math.max(0,Math.min(.12,compression));
- group.visible=amount>.01;group.position.y=(1-amount)*.65;group.scale.y=Math.max(.01,amount*(1-load/GEAR_FOOT_DEPTH));
+ // Collapse toward the underside mounting plane, never translate shortened legs above the hull.
+ group.visible=amount>.01;group.position.y=-(1-amount)*.40;group.scale.y=amount*(1-load/GEAR_FOOT_DEPTH);
 }

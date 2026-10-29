@@ -1,6 +1,6 @@
 import {Quaternion,Vector3} from "three";
 export const PLANET_EXPLOSION_TIMING=Object.freeze({charge:1.2,burst:2.5});
-export const PLANET_HITS=Object.freeze({earth:20,moon:12});
+export const PLANET_HITS=Object.freeze({earth:60,moon:12});
 /** Smooth two-beat red glow, with a rising envelope and no hard on/off flashes. */
 export function planetChargeGlow(seconds){
  const t=Math.max(0,Math.min(PLANET_EXPLOSION_TIMING.charge,seconds));

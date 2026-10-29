@@ -1,5 +1,11 @@
 # Performance checkpoint
 
+## 2026-10-29 resource/idle-work audit
+
+RimPlasma's explicitly owned meshes now receive dispose events, releasing instanceMatrix GPU bindings as well as shared geometry/materials. Idle rim/projectile effects stop instance-buffer uploads. Flight axes, chase pose/clearance and collision target arrays reuse scratch storage; weak scratch keys do not keep removed craft/camera positions alive.
+
+`node --expose-gc scripts/audit-resource-lifecycle.mjs`: nine warmed factory cases, ten measured creation/disposal cycles each. All1,590 tracked geometry/material/texture/instance resources released exactly once. After three GC/event-loop settle passes, retained typed-array growth was0 bytes and heap delta283,472 bytes in this run. This is not a browser React mount/unmount or GPU memory trace. Existing loader caches are intentional; no cache-clearing or reduced geometry/visual quality was introduced.
+
 Target: a responsive desktop scene on an ordinary laptop with integrated graphics. This remains a target, not a measured hardware guarantee.
 
 ## Measured from local assets

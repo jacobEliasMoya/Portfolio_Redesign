@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {Group,Vector3} from "three";
+import {Box3,Group,Vector3} from "three";
+import {createUFOV3,disposeUFOV3} from "../components/three/ufo/create-ufo-v3.mjs";
 import {applyLandingGear,touchdownCompression,launchCompression,PARKED_COMPRESSION,GEAR_FOOT_DEPTH} from "../components/three/ufo/landing-suspension.mjs";
 import {landingPose,LANDING_DURATION,TOUCHDOWN_TIME} from "../components/three/ufo/lunar-landing.mjs";
 import {launchProgress} from "../components/three/ufo/lunar-launch.mjs";
@@ -22,4 +23,19 @@ test("landing contact and parked handoff remain continuous at the actual craft s
  let previous=null;
  for(let age=TOUCHDOWN_TIME;age<=LANDING_DURATION+.1;age+=1/120){const pose=landingPose(start,pad,up,clearance,age,out,scale);assert.ok(Math.abs(out.y+(pose.compression-GEAR_FOOT_DEPTH)*scale-.02)<1e-9);if(previous!==null)assert.ok(Math.abs(out.y-previous)<.005);previous=out.y;}
  const done=landingPose(start,pad,up,clearance,LANDING_DURATION,out,scale);assert.equal(done.done,true);assert.equal(done.compression,PARKED_COMPRESSION);
+});
+
+test("actual V3 gear retracts toward the underside without emerging through the disc",()=>{
+ const model=createUFOV3(),gear=model.getObjectByName("v3-gear"),bounds=new Box3();
+ let previous=-Infinity;
+ try{
+  for(let step=100;step>=0;step--){
+   const amount=step/100;applyLandingGear(gear,amount);model.updateMatrixWorld(true);bounds.setFromObject(gear);
+   assert.ok(bounds.max.y<0,"gear must remain below the hull midplane throughout retraction");
+   assert.ok(bounds.min.y>=previous-1e-9,"feet must retract upward continuously");previous=bounds.min.y;
+  }
+  assert.equal(gear.visible,false);
+  applyLandingGear(gear,1);model.updateMatrixWorld(true);bounds.setFromObject(gear);
+  assert.ok(Math.abs(bounds.min.y+GEAR_FOOT_DEPTH)<1e-6,"deployed foot clearance must be unchanged");
+ }finally{disposeUFOV3(model);}
 });

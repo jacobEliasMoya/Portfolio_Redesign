@@ -25,9 +25,9 @@ function LunarCompanion({ enabled, reducedMotion, piloting }: { enabled: boolean
   return <OrbitingMoon draggable={!piloting} earthRadius={Math.min(6.5,aspect*9.4)} enabled={enabled} reducedMotion={reducedMotion} />;
 }
 
-function FlightCompanion({onLandingStatus,launchCameraReady,active,visible,reducedMotion,trackPositionRef,trackHeadingRef}:{onLandingStatus:(status:string)=>void;launchCameraReady:RefObject<boolean>;active:boolean;visible:boolean;reducedMotion:boolean;trackPositionRef:RefObject<Vector3>;trackHeadingRef:RefObject<Vector3>}) {
+function FlightCompanion({onLandingStatus,launchCameraReady,active,visible,reducedMotion,trackPositionRef,trackHeadingRef,trackUpRef}:{onLandingStatus:(status:string)=>void;launchCameraReady:RefObject<boolean>;active:boolean;visible:boolean;reducedMotion:boolean;trackPositionRef:RefObject<Vector3>;trackHeadingRef:RefObject<Vector3>;trackUpRef:RefObject<Vector3>}) {
  const aspect=useThree(s=>s.size.width/Math.max(1,s.size.height));
- return <PilotSaucer onLandingStatus={onLandingStatus} launchCameraReady={launchCameraReady} trackHeadingRef={trackHeadingRef} trackPositionRef={trackPositionRef} active={active} visible={visible} reducedMotion={reducedMotion} center={[0,.35,-9]} earthRadius={Math.min(6.5,aspect*9.4)} scale={.38}/>;
+ return <PilotSaucer type="v3" onLandingStatus={onLandingStatus} launchCameraReady={launchCameraReady} trackUpRef={trackUpRef} trackHeadingRef={trackHeadingRef} trackPositionRef={trackPositionRef} active={active} visible={visible} reducedMotion={reducedMotion} center={[0,.35,-9]} earthRadius={Math.min(6.5,aspect*9.4)} scale={.38}/>;
 }
 
 function Failure() {
@@ -45,7 +45,7 @@ export default function LoaderScene({ reducedMotion, replay, zoomSteps, zoomRese
 }) {
   const [piloting,setPiloting]=useState(false),[landingStatus,setLandingStatus]=useState("");
   const launchCameraReady=useRef(false);
-  const flightPosition=useRef(new Vector3()),flightHeading=useRef(new Vector3(0,0,-1));
+  const flightPosition=useRef(new Vector3()),flightHeading=useRef(new Vector3(0,0,-1)),flightUp=useRef(new Vector3(0,1,0));
   const [flightReady,setFlightReady]=useState(false);
   useEffect(()=>{
     if(!flightReady||piloting)return;
@@ -60,7 +60,7 @@ export default function LoaderScene({ reducedMotion, replay, zoomSteps, zoomRese
   },[flightReady,piloting,onPilotChange]);
   return <LoaderBoundary><><Canvas dpr={1} frameloop="demand" camera={{ position: [0, 0, 22], fov: 40 }} gl={{ antialias: true, alpha: false }} fallback={<Failure />}>
     <AdaptiveQuality reducedMotion={reducedMotion}/>
-    <FollowSceneCamera launchCameraReady={launchCameraReady} piloting={piloting} targetRef={flightPosition} headingRef={flightHeading} ready={flightReady} reducedMotion={reducedMotion} zoomSteps={zoomSteps} zoomReset={zoomReset}/>
+    <FollowSceneCamera launchCameraReady={launchCameraReady} piloting={piloting} targetRef={flightPosition} headingRef={flightHeading} upRef={flightUp} ready={flightReady} reducedMotion={reducedMotion} zoomSteps={zoomSteps} zoomReset={zoomReset}/>
     <color attach="background" args={["#000000"]} />
     <ProceduralStarfield/>
     <ambientLight intensity={0.8} />
@@ -70,7 +70,7 @@ export default function LoaderScene({ reducedMotion, replay, zoomSteps, zoomRese
     <Suspense fallback={null}><EarthBackdrop piloting={piloting} earthReady={earthReady} onRevealed={onEarthReady} reducedMotion={reducedMotion} /></Suspense>
     <Suspense fallback={null}><LunarCompanion piloting={piloting} enabled={earthReady} reducedMotion={reducedMotion} /></Suspense>
     <Suspense fallback={null}><ParticleWordmark shipPositionRef={flightPosition} piloting={piloting} startRequested={earthReady} reducedMotion={reducedMotion} replay={replay} assetsReady={assetsReady} onPhaseChange={onPhaseChange} onPrepared={onPrepared} onComplete={() => { setFlightReady(true); onComplete(); }} /></Suspense>
-    <FlightCompanion onLandingStatus={setLandingStatus} launchCameraReady={launchCameraReady} trackHeadingRef={flightHeading} trackPositionRef={flightPosition} active={piloting} visible={earthReady} reducedMotion={reducedMotion}/>
+    <FlightCompanion trackUpRef={flightUp} onLandingStatus={setLandingStatus} launchCameraReady={launchCameraReady} trackHeadingRef={flightHeading} trackPositionRef={flightPosition} active={piloting} visible={earthReady} reducedMotion={reducedMotion}/>
   </Canvas>
     <PilotMenu flightStatus={landingStatus} active={piloting} ready={flightReady} onToggle={()=>{const next=!piloting;setPiloting(next);onPilotChange(next);}}/>
   </></LoaderBoundary>;

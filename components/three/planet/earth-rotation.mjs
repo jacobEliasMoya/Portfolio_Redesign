@@ -1,6 +1,6 @@
 import { Quaternion, Vector3 } from "three";
 export const EARTH_AXIAL_TILT = 23.44 * Math.PI / 180;
-export const EARTH_IDLE_SPEED = 0.035;
+export const EARTH_IDLE_SPEED = 0.0525;
 /** Drag in camera-space axes so horizontal and vertical movement remain intuitive. */
 export function applyEarthDrag(orientation, dx, dy, cameraOrientation) {
   const up = new Vector3(0, 1, 0).applyQuaternion(cameraOrientation);

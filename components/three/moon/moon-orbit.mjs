@@ -1,5 +1,5 @@
 /** Stylized compressed orbit, independent of Earth's drag and axial spin. */
-export const MOON_ORBIT = Object.freeze({ period: 150, initialPhase: 2.25, inclination: 18 * Math.PI / 180, node: -12 * Math.PI / 180 });
+export const MOON_ORBIT = Object.freeze({ period: 100, initialPhase: 2.25, inclination: 18 * Math.PI / 180, node: -12 * Math.PI / 180 });
 export function getMoonOrbitPose(seconds, distance, period = MOON_ORBIT.period) {
   const phase = MOON_ORBIT.initialPhase + Math.max(0,seconds) / period * Math.PI * 2;
   return { position: [Math.sin(phase)*distance,0,Math.cos(phase)*distance], yaw: phase + Math.PI };

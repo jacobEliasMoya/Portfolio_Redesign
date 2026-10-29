@@ -2,6 +2,7 @@ import {Box3,CylinderGeometry,Group,LatheGeometry,Mesh,MeshStandardMaterial,Mesh
 import {mergeGeometries,mergeVertices} from "three/addons/utils/BufferGeometryUtils.js";
 import {createHexagonalEarthGeometry} from "../planet/hexagonal-earth-geometry.mjs";
 import {createHexCanopy} from "./hexagonal-canopy-geometry.mjs";
+import {addAlienCannon} from "./alien-cannon.mjs";
 import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js";
 const noise=(x,z)=>{const a=Math.sin(x*127.1+z*311.7)*43758.5453;return a-Math.floor(a);};
 const upper=[[0,.43],[.82,.43],[1.1,.38],[1.6,.25],[1.95,.13],[2.23,.045]],lower=[[0,-.43],[.65,-.43],[1.2,-.34],[1.7,-.22],[2.23,-.065]];
@@ -50,9 +51,9 @@ export function createReferenceUFO(){
  add(new CylinderGeometry(.79,.83,.08,12),rim,[0,.47,0]);add(new CylinderGeometry(.70,.70,.024,12),dark,[0,.51,0]);
  const canopy=createHexCanopy(),glass=new MeshPhysicalMaterial({color:"#07596f",metalness:.26,roughness:.19,clearcoat:.85,clearcoatRoughness:.18});glass.name="teal-faceted-glass";canopy.frame.computeVertexNormals();add(canopy.glass,glass);add(canopy.frame,steel);
  add(box(.23,.22,.18),dark,[0,.62,-.15]);
- // Fixed weapon stays aligned with the existing projectile spawn [0,.24,2.49].
- add(new CylinderGeometry(.19,.24,.28,8),steel,[0,.24,2.19],[Math.PI/2,0,0]);add(new CylinderGeometry(.15,.18,.12,12),dark,[0,.24,2.38],[Math.PI/2,0,0]);add(new CylinderGeometry(.10,.10,.02,12),light,[0,.24,2.45],[Math.PI/2,0,0]);
- batch(rotor);batch(fixed);batch(gear);root.add(rotor,fixed,gear);owned.forEach(g=>g.dispose());
- const bounds=new Box3().setFromObject(root);root.userData.modelStats={tiles:tiles.length,upperTiles:tiles.filter(t=>t.side>0).length,draws:rotor.children.length+fixed.children.length+gear.children.length,triangles:0,bounds:bounds.getSize(new Vector3()).toArray()};root.traverse(n=>{if(n.isMesh)root.userData.modelStats.triangles+=(n.geometry.index?.count??n.geometry.attributes.position.count)/3;});gear.visible=false;return root;
+ const weaponRotor=new Group();weaponRotor.name="alien-cannon-rotor";
+ addAlienCannon(add,{metal:steel,dark,trim:rim,cyan:light},(g,m,p,r)=>add(g,m,p,r,[1,1,1],weaponRotor));
+ batch(rotor);batch(fixed);batch(gear);batch(weaponRotor);root.add(rotor,fixed,gear,weaponRotor);owned.forEach(g=>g.dispose());
+ const bounds=new Box3().setFromObject(root);root.userData.modelStats={tiles:tiles.length,upperTiles:tiles.filter(t=>t.side>0).length,draws:rotor.children.length+fixed.children.length+gear.children.length+weaponRotor.children.length,triangles:0,bounds:bounds.getSize(new Vector3()).toArray()};root.traverse(n=>{if(n.isMesh)root.userData.modelStats.triangles+=(n.geometry.index?.count??n.geometry.attributes.position.count)/3;});gear.visible=false;return root;
 }
 export function disposeReferenceUFO(root){const materials=new Set();root.traverse(n=>{if(n.isMesh){n.geometry.dispose();materials.add(n.material);}});materials.forEach(m=>m.dispose());}

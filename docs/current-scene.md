@@ -1,4 +1,74 @@
+Opening camera restored: tour progress0 is a fixed Overview at [0,0,22], aimed at [0,.35,-9], matching the original pre-tour camera. It stays there through loading and after readiness until scroll/Next advances to Jake, Space, California and Moon. Back/reset return to Overview. Tour button stepping is gated on readiness like wheel input. Wide landmark views remain. Four tour tests cover stationary opening despite moving landmarks, forward/reverse stops and path clearance; full lint/build pass. Live animation framing still awaits visual review.
+
+Tour refinement: stops are now Jake -> Space -> California -> Moon. Jake and Space have separate word-center anchors that follow text orbit/drag; wide camera distance is preserved. TOUR_STOPS is an ordered key/label list with automatically distributed progress and generic sampling, so future text/place anchors can be inserted without rewriting segment interpolation. New anchors must also be supplied/updated from their scene objects. Three focused tour tests and full lint pass; production build passes. Live framing remains unverified.
+
+Tour and projectile gravity update (2026-10-29): non-pilot scroll now visits Jake, California and Moon, with Back/Next selecting those stops. Targets follow the moving text, rotating Earth and orbiting Moon. Camera stand-off is max(22, EarthRadius*3.8) world units to preserve the earlier wide view; spherical travel and body clearance avoid crossing terrain. Live camera framing still needs visual review.
+
+Earth, BlockMoon/OrbitingMoon and BlackHole/BlackHoleV2 expose gravity=true and gravityPower=1 by default. Set gravity=false to disable a model, gravityPower=0 for no pull, or e.g. gravityPower=1.5 for stronger pull. Softened inverse-square fields follow model world transforms and skip hidden/destroyed planets; total acceleration is bounded at80. Fired bolts use 120Hz maximum integration steps and swept collision checks along each curved segment. Existing damage and charge behavior remain. All166 tests pass, including gravity strength/toggles, frame-rate consistency and collision checks.
+
 # Current scene — checkpoint 2026-10-28
+
+Camera banking softness: chase orientation damping is now rate4 rather than8, matching positional damping and taking about .75s to settle95% after a fixed change. Q/E and ship-relative steering remain immediate; full rotations, inverted recovery, clearance and reduced-motion behavior are preserved. Six camera tests and targeted lint pass.
+
+## Resource audit and ship-relative controls — latest 2026-10-29
+
+Flight now owns a normalized orientation quaternion. Steering increments apply around the current ship's own yaw/pitch/roll axes; thrust and Space/C lift derive from its forward/up axes, including sideways/inverted poses. Q/E are continuous left/right rolls with eased spin speed, not strafe. Camera boom/up follow the actual craft orientation through complete turns and return upright on exploration exit. Quaternion camera easing avoids an inverted up-vector singularity. Pad launch preserves the full pad attitude; cosmetic bank/lean are separate. Previous scene-relative yaw/pitch/lift limits are superseded.
+
+Memory fixes: RimPlasma now disposes both InstancedMesh objects in addition to shared geometry/materials, because dispose=null disables automatic cleanup. Idle rim/projectile batches stop GPU buffer uploads; projectile target lists, flight vectors and camera scratch objects are reused. Scratch caches use weak keys so discarded craft/camera objects are collectible. Input/timer cleanup and existing model resource ownership were inspected.
+
+Repeatable audit: node --expose-gc scripts/audit-resource-lifecycle.mjs. Nine factories, ten measured cycles each: all1590 tracked releases occurred exactly once, with0 retained ArrayBuffer growth after settled forced GC and approximately277KiB JS heap variation. This is CPU-side ownership evidence, not React navigation/WebGL/driver profiling. All161 tests and production build pass; full lint had one unused-variable warning, now removed and rechecked. Live GPU memory and flight feel remain unmeasured.
+
+Moon spacing update: orbit distance is now EarthRadius*3.6 + MoonRadius, previously EarthRadius*2.8 + MoonRadius. This increases center distance about26% and surface gap about44%. Moon size,100-second period, inclination, tidal lock and lunar pad/flag behavior remain unchanged; linear orbital velocity naturally increases for the wider orbit. Fifteen orbit/landing/launch/camera tests, targeted lint and production build pass. Earlier2.8-distance values are superseded.
+
+Rim-plasma direction smoothing: each emitter keeps a persistent quaternion and follows new exhaust direction along the shortest arc with exponential rate7 (roughly .4s to settle). Pulse origins use that same eased direction. Strength now ramps at8 and fades at6 to soften transfers between ports. Flight controls/physics remain immediate. Reduced motion follows input directly without interpolated motion. Five focused propulsion tests, targeted lint and production build pass; live feel awaits user review.
+
+## Directional rim plasma — latest 2026-10-29
+
+Angular V3 now emits broad blue/cyan-white three-dimensional plasma lobes from its actual six blue rim lights during manual free flight. Rear ports respond to forward thrust, front ports to reverse, sides to strafe; canted opposite-side jets respond to turning, vertical cant responds to lift/pitch and braking opposes local velocity. Input is cleared before launch/landing/park/crash early returns, so these effects do not replace or compete with the existing underside takeoff rings. Coasting alone does not emit a trail.
+
+Three overlapping pulses per port use shared lathed lobe geometry with rounded widening fronts and tapered/fading tails, a white inner volume and cyan-blue outer envelope. Ignition/shutdown is damped; no thin pink ribbons. Two instanced draws total (18 instances each), no textures, lights, packages, React frame updates or per-pulse allocations. Effects are excluded from crash debris and use explicit owned-resource cleanup. Reduced motion displays a static response to direct input rather than traveling pulses.
+
+RimPlasma lives under the same craft transform at model scale; sampleRimDrive places origins just beyond the V3 lamp faces. Other model variants retain their existing effects because their rim/rotor layouts differ. All151 tests, changed-file lint and production build pass. New tests cover direction/torque/braking, actual lamp ray alignment, bounded directions and broad volumetric geometry. Live shader appearance and motion feel remain pending browser review.
+
+## Circular angular-UFO cockpit mount — latest 2026-10-29
+
+V3 dome now sits in a circular 48-segment metal collar with circular dark gasket, replacing the tight six-sided mount. Gasket's .80 inner radius clears the complete rotating glass/frame sweep; upper armor opening is also circular at .94 radius, overlapped by the .98 outer collar to seal the boundary. Cockpit floor is lowered from Y=.49 to .44. Dome facets, rotation, angular outer hull and other UFO variants remain unchanged. No additional material batches. All147 tests, lint and production build pass, including 96-angle actual collar ray checks and full-sweep radial clearance. Six exact-model renders saved in docs/references/ufo-v3-circular-cockpit; front/side/rear/three-quarter inspected. Browser motion review remains pending.
+
+## Weapon rotation — latest 2026-10-29
+
+All UFO variants now rotate their three cannon jaws and cyan jaw accents around the local +Z bore at .9 radians/second (about seven seconds per turn). The saddle, recessed aperture, muzzle and shot/charge origins remain fixed. Offset-axis compensation keeps the muzzle exactly at [0,-.10,2.88] rather than orbiting around the UFO center. Delta-based motion clamps long frames and freezes under reduced motion. V3/Reference factories keep a separate two-material rotor batch; JSX cannon uses four fixed plus two rotating material batches. Existing crash/consumption geometry is retained. All146 tests pass; visual motion review remains pending.
+
+## Shared cannon and angular dome rotation — latest 2026-10-29
+
+Angular V3 now rotates only its faceted glass dome and metal dome frame, isolated in `v3-dome`. The outer disc, rim lamps, vent housings/louvers, cannon, cockpit interior/collar and landing gear remain steady relative to craft heading. Dome uses the existing 2.34 rad/s speed, engine-power launch ramp and reduced-motion freeze. Earlier disc-rotation notes for V3 are superseded; other variants keep their existing rotor behavior.
+
+All four UFO variants now share the three-jaw alien cannon, shifted .16 model units forward to expose more of the jaws while retaining saddle overlap with the hull. Shared muzzle is [0,-.10,2.88]; charge and fired bolt placement use it for every variant. Charging appearance and blaster damage are unchanged. Classic/Hexagonal JSX models use a reusable four-material-batch cannon component; Reference/V3 merge the same geometry into their existing materials. Preview includes Classic alongside the existing three variants.
+
+All 145 tests pass, including clear muzzle/recess, saddle embedding, independent dome/outer hull transforms and vent alignment. Full lint and final production build pass. Updated six-view offline images are under docs/references/ufo-v3-cannon-extended and docs/references/ufo-reference-shared-cannon. Actual browser appearance/animation review remains pending.
+
+V3 vent attachment correction: all three underside vent housings, dark wells and louvers belong to v3-disc, matching the rotating armor openings. Landing gear, cockpit and cannon retain their fixed groups. Existing spin/engine/reduced-motion behavior drives the vents without another animation loop.
+
+V3 cannon revision: fixed low-mounted alien emitter with embedded saddle, recessed cyan throat and three swept focusing jaws replaces the tube on top of the rim. Shared V3 main/preview geometry; muzzle [0,-.10,2.72] drives charge and projectile placement. Charge appearance, damage and flight behavior remain unchanged. Model remains 17 batches / 12,394 triangles. Six offline views saved under docs/references/ufo-v3-alien-cannon; live browser review pending.
+
+Earth durability update: threshold is now 60 damage, requiring three full-charge 20-damage hits on an undamaged Earth (or accumulated weaker shots). Dents, scorch and impact plumes remain visible while it survives. Moon stays at 12. The existing warning/breakup sequence still starts at the threshold. Flight manual reads the shared durability constants. Earlier one-hit Earth/20-threshold notes are superseded.
+
+Fired bolt update: slim rounded-front cyan blaster pulses replace the teardrop envelope, with a long narrow white core, short fading tail and restrained charged-shot violet edge. Charge increases width by up to 1.8x and length by 1.45x; flying bolts do not wobble or breathe. The separate compact charging orb and filament shader/pulse are unchanged, as are projectile damage, speed, input, pooling, impacts and collision behavior. No new draw calls/packages. All 142 tests pass; live visual review remains pending.
+
+Version 3 UFO disc rotation is now 2.34 radians/second at full power, a 30% increase from 1.8. Shared by main scene and V3 preview; existing engine ramp, stationary parked state and reduced-motion freeze remain intact. Steering/flight speeds are unchanged. Targeted lint passes.
+
+## Impact plumes and gear containment — 2026-10-29
+
+Earth impacts now combine an uneven surface dust front with fourteen central rising billows; charged impacts spread farther with varied emission timing. Moon uses an explicit lunar profile with neutral-gray smaller, faster, short-lived ballistic dust arcs rather than Earth-like lingering smoke. Existing actual lunar tile ejecta, scars and damage stay intact. Eight slots of forty instances still share one draw per body; sample storage is reused, no textures/lights/packages added, and reduced motion skips the effects.
+
+Shared landing gear now collapses toward local Y=-.40 at the underside instead of translating up by .65 through the disc. Deployed clearance and compression behavior are unchanged. Actual V3 geometry stays below the hull midplane for the full retraction sweep. All 140 scene tests pass; live visual review remains pending.
+
+## Main-scene UFO selection — 2026-10-29
+
+Version 3 now owns a one-frame 128px studio-reflection capture using the same three Lightformer cards as the UFO preview. The capture is assigned directly to its materials so main-scene planets and background do not inherit it. Both preview and main scene therefore use the same model and reflection setup; their direct scene lights and framing remain different. Full build/lint/type checks and nine targeted tests pass; live visual comparison remains pending.
+
+Motion pacing: lunar orbit is now 100 seconds per revolution and Earth idle rotation is .0525 radians/second (about 120 seconds per revolution), both 50% faster than the prior settings. Tidal locking, drag pause/resume and reduced-motion behavior use the existing shared helpers. Earlier 150-second / .035-radian values below are superseded.
+
+The main space scene now explicitly selects the angular Version 3 UFO, matching the default `/ufo` inspection model, at the existing .38 scale. It uses the shared PilotSaucer controller, landing gear/suspension, engine power, weapons and crash effects. Earlier notes that the main scene retains the previous hexagonal ship are superseded. Other model variants remain available in the inspection view and source.
 
 This document is the source of truth for the current implementation. Older refinements in architecture.md and AGENTS.md describe the design history; when values conflict, use this snapshot and the code.
 

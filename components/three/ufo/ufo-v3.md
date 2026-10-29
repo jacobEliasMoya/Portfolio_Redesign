@@ -1,5 +1,13 @@
 # Version 3 — angular UFO
 
+Latest revision: only `v3-dome` (glass and frame) spins at 2.34rad/s; the outer disc, lights, vents, gear and cannon remain steady. Shared alien cannon is shifted .16 forward and used on all four variants; common muzzle [0,-.10,2.88]. This supersedes earlier rotating-disc and V3-only-cannon notes below. All145 tests, lint and production build pass; updated six-view geometry renders in docs/references/ufo-v3-cannon-extended. Live browser animation review remains pending.
+
+## Alien cannon revision — 2026-10-29
+
+Replaced the top-mounted tube with a fixed ventral emitter built by `alien-cannon.mjs`. Dimensional plan: hull diameter 4.46; emitter center Y=-.10 / Z=2.08; broad saddle radius .35 overlaps the rim, three swept jaws reach Z=2.64, and recessed cyan throat sits at Z=2.34 behind the Z=2.38 collar. Two upper-side jaws and one lower jaw leave the forward axis open. Actual muzzle is [0,-.10,2.72]; V3 charging and fired bolts derive their origins from it, while other variants retain their prior positions. Existing charging appearance and bolt damage remain unchanged.
+
+No new materials or draws: 17 total batches, 12,394 triangles including gear. Cannon belongs to the fixed cockpit group, independent of spinning armor, and participates in existing batched crash/consumption geometry. Six exact-model renders saved in docs/references/ufo-v3-alien-cannon; front/side/rear/three-quarter inspected. Offline render tool now supports both Blender 4 and 5 Eevee identifiers. All 143 tests and production build pass; live browser appearance remains pending.
+
 Chosen design: option 3 in docs/references/ufo-reference-rebuild/hex-design-evolution-options.png. Uses the reference-3d-modeling workflow. The generated drawing has inconsistent perimeter edge counts across views; the implemented asset follows the established six-sided design language with a true six-sided plan and modest bevels.
 
 ## Proportions and construction

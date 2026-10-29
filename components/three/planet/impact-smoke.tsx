@@ -4,14 +4,14 @@ import {useFrame} from "@react-three/fiber";
 import {Color,DynamicDrawUsage,InstancedBufferAttribute,InstancedMesh,Object3D,Vector3} from "three";
 import {getProjectileTarget} from "../ufo/projectile-collision.mjs";
 import {createSmokeRing,smokePuff,SMOKE_PUFFS,SMOKE_RING_SLOTS} from "./impact-smoke.mjs";
-export function ImpactSmoke({earth,reducedMotion,surfaceRadius=3}:{earth:RefObject<InstancedMesh|null>;reducedMotion:boolean;surfaceRadius?:number}){
+export function ImpactSmoke({earth,reducedMotion,surfaceRadius=3,kind="earth"}:{earth:RefObject<InstancedMesh|null>;reducedMotion:boolean;surfaceRadius?:number;kind?:"earth"|"moon"}){
  const mesh=useRef<InstancedMesh>(null),rings=useRef<Array<ReturnType<typeof createSmokeRing>|null>>(Array(SMOKE_RING_SLOTS).fill(null)),seen=useRef(0),slot=useRef(0);
- const scratch=useRef({transform:new Object3D(),position:new Vector3(),color:new Color()});
+ const scratch=useRef({transform:new Object3D(),position:new Vector3(),color:new Color(),puff:{scale:0,alpha:0}});
  useEffect(()=>{if(!mesh.current)return;mesh.current.instanceMatrix.setUsage(DynamicDrawUsage);mesh.current.geometry.setAttribute("smokeAlpha",new InstancedBufferAttribute(new Float32Array(SMOKE_RING_SLOTS*SMOKE_PUFFS),1));},[]);
  useFrame((state,delta)=>{
   if(!mesh.current||!earth.current)return;
   const target=getProjectileTarget(earth.current);if(!target)return;
-  while(seen.current<target.impactMarks.length){const mark=target.impactMarks[seen.current++];if(!reducedMotion){rings.current[slot.current]=createSmokeRing(mark,surfaceRadius);slot.current=(slot.current+1)%SMOKE_RING_SLOTS;}}
+  while(seen.current<target.impactMarks.length){const mark=target.impactMarks[seen.current++];if(!reducedMotion){rings.current[slot.current]=createSmokeRing(mark,surfaceRadius,kind);slot.current=(slot.current+1)%SMOKE_RING_SLOTS;}}
   if(!rings.current.some(Boolean)){mesh.current.visible=false;return;}
   const alpha=mesh.current.geometry.getAttribute("smokeAlpha");if(!alpha)return;
   let active=false;const {transform,position,color}=scratch.current;
@@ -21,7 +21,7 @@ export function ImpactSmoke({earth,reducedMotion,surfaceRadius=3}:{earth:RefObje
    active ||=live;
    for(let i=0;i<SMOKE_PUFFS;i++){
     const id=s*SMOKE_PUFFS+i;
-    if(live&&ring){const puff=smokePuff(ring,i,position);transform.position.copy(position);transform.rotation.set(i*.71+ring.age*.18,i*1.37,i*.42);transform.scale.setScalar(puff.scale);alpha.setX(id,puff.alpha);const shade=.18+(i%7)*.018;color.setRGB(shade,shade*.96,shade*.92);mesh.current.setColorAt(id,color);}
+    if(live&&ring){const puff=smokePuff(ring,i,position,scratch.current.puff);transform.position.copy(position);transform.rotation.set(i*.71+ring.age*(ring.kind==="moon"?1.2:.18),i*1.37,i*.42);transform.scale.setScalar(puff.scale);alpha.setX(id,puff.alpha);const shade=(ring.kind==="moon"?.32:.18)+(i%7)*.018;color.setRGB(shade,shade*(ring.kind==="moon"?1:.96),shade*(ring.kind==="moon"?1:.92));mesh.current.setColorAt(id,color);}
     else {transform.scale.setScalar(0);alpha.setX(id,0);}
     transform.updateMatrix();mesh.current.setMatrixAt(id,transform.matrix);
    }

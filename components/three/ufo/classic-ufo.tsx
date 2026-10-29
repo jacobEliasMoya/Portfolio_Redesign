@@ -4,6 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { Group, InstancedMesh, Object3D } from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { createSaucerGeometry } from "./saucer-geometry.mjs";
+import {AlienCannon} from "./alien-cannon";
 
 /** Original faceted 1950s saucer: a continuous faceted hull and a glazed cockpit. */
 export function ClassicUFO({ scale=1,position=[0,0,0],rotation=[0,0,0],hover=true,reducedMotion=false }: {
@@ -52,10 +53,7 @@ export function ClassicUFO({ scale=1,position=[0,0,0],rotation=[0,0,0],hover=tru
     </group>;})}
     </group>
     <group>
-    {/* Fixed forward emitter: local +Z matches the cockpit console and flight thrust. */}
-    <mesh position={[0,.24,1.91]}><boxGeometry args={[.34,.2,.8]}/><meshStandardMaterial color="#344752" metalness={.7} roughness={.3}/></mesh>
-    <mesh position={[0,.24,2.29]} rotation={[Math.PI/2,0,0]}><cylinderGeometry args={[.19,.19,.36,8]}/><meshStandardMaterial color="#253740" metalness={.72} roughness={.26}/></mesh>
-    <mesh position={[0,.24,2.477]} rotation={[Math.PI/2,0,0]}><cylinderGeometry args={[.115,.115,.012,8]}/><meshStandardMaterial color="#80ffe0" emissive="#25dca9" emissiveIntensity={.65} roughness={.3}/></mesh>
+    <AlienCannon reducedMotion={reducedMotion}/>
     <mesh position={[0,.44,0]} rotation={[Math.PI/2,0,0]}><torusGeometry args={[.839,.036,5,24]}/><meshStandardMaterial color="#46545f" metalness={.65} roughness={.3}/></mesh>
     <mesh><primitive object={geometry.frame} attach="geometry"/><meshStandardMaterial color="#b5c0c9" metalness={.72} roughness={.23}/></mesh>
     <mesh><primitive object={geometry.canopy} attach="geometry"/><meshPhysicalMaterial color="#3f7e94" metalness={.12} roughness={.12} transparent opacity={.48} depthWrite={false} clearcoat={1} flatShading/></mesh>

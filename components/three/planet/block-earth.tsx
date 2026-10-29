@@ -38,10 +38,12 @@ export type BlockEarthProps = {
   axialTilt?: boolean;
   draggable?: boolean;
   onRevealed?: () => void;
+  gravity?:boolean;
+  gravityPower?:number;
 };
 
 /** Real, beveled hexagonal prism instances; map-derived continents and raised relief on all six sides. */
-export function BlockEarth({ children, radius = 3, position = [0, 0, 0], rotation = [0, Math.PI / 2, 0], revealed = true, reducedMotion = false, autoRotate = false, axialTilt = true, draggable = false, onRevealed }: BlockEarthProps) {
+export function BlockEarth({ children, radius = 3, position = [0, 0, 0], rotation = [0, Math.PI / 2, 0], revealed = true, reducedMotion = false, autoRotate = false, axialTilt = true, draggable = false, onRevealed,gravity=true,gravityPower=1 }: BlockEarthProps) {
   const raw = useLoader(FileLoader, "/models/earth/block-earth.json?revision=ocean-ripple-1");
   const data = useMemo(() => parseEarth(raw), [raw]);
   const ocean = useMemo(() => {
@@ -145,7 +147,8 @@ export function BlockEarth({ children, radius = 3, position = [0, 0, 0], rotatio
           <sphereGeometry args={[data.radius * 0.98, 64, 40]} />
           <meshStandardMaterial color="#073775" roughness={0.75} metalness={0.03} />
         </mesh></group>
-        <instancedMesh ref={mesh} args={[undefined, undefined, data.sizes.length]} frustumCulled={false}>
+        <object3D name="tour-california" position={[-2.175,1.946,-1.231]}/>
+        <instancedMesh name="tour-earth" userData={{projectileGravity:{enabled:gravity,power:gravityPower,radius:data.radius,kind:"earth"}}} ref={mesh} args={[undefined, undefined, data.sizes.length]} frustumCulled={false}>
           <primitive object={geometry} attach="geometry" />
           <meshStandardMaterial roughness={0.58} metalness={0.08} onBeforeCompile={applyImpactGlow} customProgramCacheKey={()=>"earth-impact-glow-v3"} />
         </instancedMesh>

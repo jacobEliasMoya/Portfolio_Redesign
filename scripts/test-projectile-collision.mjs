@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {BoxGeometry,InstancedBufferAttribute,Color,Group,InstancedMesh,Matrix4,MeshBasicMaterial,Vector3} from "three";
 import {createDestructible,firstProjectileHit,segmentSphereTime} from "../components/three/ufo/projectile-collision.mjs";
+import {PLANET_HITS} from "../components/three/planet/planet-explosion.mjs";
 const v=(x,y=0,z=0)=>new Vector3(x,y,z);
 function fixture(){const mesh=new InstancedMesh(new BoxGeometry(.2,.2,.2),new MeshBasicMaterial(),3);for(let i=0;i<3;i++)mesh.setMatrixAt(i,new Matrix4().makeTranslation(i,0,0));const dead=new Set();return {mesh,dead,target:createDestructible(mesh,dead,{blast:.25,padding:0})};}
 test("swept collision catches fast crossings, tangency, starts inside and misses",()=>{
@@ -85,14 +86,18 @@ test("splash tiles grade from red core to golden edge, and repeated hits char th
  const charred=new Color();mesh.getColorAt(0,charred);assert.ok(charred.r<colors[0].r);assert.ok(heat.getX(0)<.5);
 });
 
-test("one full plasma impact triggers Earth or Moon breakup; a partial charge cannot",()=>{
- for(const threshold of [20,12]){
-  for(const power of [.99,1]){
-   const {mesh,dead}=fixture(),target=createDestructible(mesh,dead,{blast:.25,foundation:.5,mode:"dent",threshold});
-   target.query(v(0,0,-2),v(0,0,2),0).destroy(power);
-   assert.equal(target.planetPhase(),power===1?"charging":"intact");
-   assert.equal(target.planetHits(),power===1?threshold:7);
-  }
+test("Earth survives two full-charge hits with persistent dents and breaks on the third; Moon stays weaker",()=>{
+ const {mesh,dead}=fixture();mesh.setMatrixAt(0,new Matrix4().makeTranslation(0,0,3));
+ const earth=createDestructible(mesh,dead,{blast:.25,foundation:2.8,mode:"dent",threshold:PLANET_HITS.earth});
+ for(let shot=1;shot<=3;shot++){
+  const hit=earth.query(v(0,0,5),v(0,0,2),shot);assert.ok(hit);hit.destroy(1);
+  assert.equal(earth.planetHits(),shot*20);assert.equal(earth.planetPhase(),shot===3?"charging":"intact");
+  assert.ok(mesh.instanceMatrix.array[14]<3);assert.ok(dead.has(0));
+ }
+ for(const power of [.99,1]){
+  const {mesh,dead}=fixture(),moon=createDestructible(mesh,dead,{blast:.25,foundation:.5,mode:"dent",threshold:PLANET_HITS.moon});
+  moon.query(v(0,0,-2),v(0,0,2),0).destroy(power);
+  assert.equal(moon.planetPhase(),power===1?"charging":"intact");
  }
 });
 
