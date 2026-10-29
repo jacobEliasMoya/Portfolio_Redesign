@@ -269,3 +269,7 @@ Personal reference-3d-modeling skill created and validated with skill-creator. I
 ## End-of-day approval — 2026-10-29
 
 Jacob approved the rebuilt archive satellite ("its absolutly awesome"). Preserve this model as the accepted design. All 110 automated tests, ESLint and production build passed for the checkpoint. Reference modeling skill is now also preserved at .agents/skills/reference-3d-modeling/SKILL.md for repository portability. No deployment or old-website integration is included.
+
+## Separate UFO reference rebuild — 2026-10-29
+
+Using reference-3d-modeling, built a new reference variant from docs/references/ufo-hexagonal-six-views.png. The current hexagonal and Classic models are preserved; main-scene default remains hexagonal. /ufo opens the new variant with a comparison selector. Broad regular hex plates, shallower silhouette, inset belt, faceted teal cockpit and recessed engine/vent wells; 120 plates, 17 total batches and 15,012 triangles including hidden gear. Original movement/power/gear/weapon conventions retained. Six exact-model offline Blender views saved in docs/references/ufo-reference-rebuild. See components/three/ufo/reference-model.md for dimensions and verification limits. No approval to replace the main-scene saucer assumed.

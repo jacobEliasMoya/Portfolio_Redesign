@@ -1,5 +1,14 @@
 # Change log
 
+## 2026-10-29 — Separate UFO reference rebuild
+
+- Build an independent reference UFO using the reference-3d-modeling workflow and the approved six-view design: broad stepped hex plates, shallow disc, cyan light belt, faceted canopy and recessed underside engine/vents.
+- Preserve the current hexagonal and Classic models and the main-scene default. Add Reference rebuild / Current hexagonal comparison controls to /ufo.
+- Retain power, rotating-disc, gear and projectile conventions. Batch 120 plates and other static geometry within separate disc, cockpit and gear groups.
+- Extend the offline exact-model renderer with six UFO views and save the renders with model dimensions and verification notes.
+
+Validation: seven relevant geometry/crash tests, ESLint and production build pass. Offline renders inspected; browser visual review remains unavailable to the agent under the saved permission setting.
+
 ## 2026-10-29 — Flight, lunar landing and archive satellite checkpoint
 
 - Add the approved hexagonal UFO, keyboard flight, chase camera, hull clearance, charged plasma weapons, terrain impacts, tile damage and irregular planet/text destruction.

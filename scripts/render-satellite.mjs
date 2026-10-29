@@ -4,11 +4,13 @@ import {tmpdir} from "node:os";
 import {join,resolve} from "node:path";
 import {spawnSync} from "node:child_process";
 import {createArchiveSatellite} from "../components/three/satellite/create-archive-satellite.mjs";
+import {createReferenceUFO} from "../components/three/ufo/create-reference-ufo.mjs";
 import {Matrix3,Matrix4,Vector3} from "three";
 
+const variant=process.argv[3]??"satellite";
 const output=resolve(process.argv[2]??"docs/references/satellite");
 const folder=join(tmpdir(),"portfolio-satellite-qa");await mkdir(folder,{recursive:true});await mkdir(output,{recursive:true});
-const created=createArchiveSatellite(),root=created.isObject3D?created:created.group??created.model;
+const created=variant==="ufo"?createReferenceUFO():createArchiveSatellite(),root=created.isObject3D?created:created.group??created.model;
 if(!root)throw new Error("Satellite factory must return a Three Object3D or {group/model}.");
 root.updateMatrixWorld(true);
 const materials=[],materialIds=new Map(),textures=[],textureIds=new Map(),meshes=[];
@@ -35,13 +37,13 @@ function serializeMesh(object,world,name){
  for(let i=0;i<p.count;i+=3){const group=g.groups.find(item=>i>=item.start&&i<item.start+item.count);triangleMaterials.push(group?.materialIndex??0);}
  meshes.push({name,positions,normals,uvs,materials:slots,triangleMaterials});g.dispose();
 }
-root.traverse(object=>{
+root.traverseVisible(object=>{
  if(!object.isMesh||!object.visible)return;
  if(object.isInstancedMesh){const instance=new Matrix4(),world=new Matrix4();for(let i=0;i<object.count;i++){object.getMatrixAt(i,instance);world.multiplyMatrices(object.matrixWorld,instance);serializeMesh(object,world,`${object.name}-${i}`);}}
  else serializeMesh(object,object.matrixWorld,object.name||`mesh-${meshes.length}`);
 });
 const asset=join(folder,"satellite-asset.json");await writeFile(asset,JSON.stringify({materials,textures,meshes}));
-console.log(`Exported exact satellite factory: ${meshes.length} meshes, ${materials.length} materials, ${textures.length} textures.`);
+console.log(`Exported exact ${variant} factory: ${meshes.length} meshes, ${materials.length} materials, ${textures.length} textures.`);
 const executable=process.env.BLENDER_EXECUTABLE??"C:/Program Files/Blender Foundation/Blender 4.4/blender.exe";
-const result=spawnSync(executable,["--background","--factory-startup","--python",resolve("scripts/render-satellite.py"),"--",asset,output],{stdio:"inherit",windowsHide:true});
+const result=spawnSync(executable,["--background","--factory-startup","--python",resolve("scripts/render-satellite.py"),"--",asset,output,variant],{stdio:"inherit",windowsHide:true});
 if(result.error)throw result.error;process.exitCode=result.status??1;
