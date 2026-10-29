@@ -2,7 +2,8 @@
 import { useEffect, useRef, type RefObject } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Euler, Group, Quaternion, Vector3 } from "three";
-import {canLand,landingPose,landingEase} from "./lunar-landing.mjs";
+import {canLand,landingPose,landingEase,LANDING_DURATION} from "./lunar-landing.mjs";
+import {PARKED_COMPRESSION} from "./landing-suspension.mjs";
 import { blendLaunchAttitude, launchProgress } from "./lunar-launch.mjs";
 import { CrashEffects, type CrashEvent } from "./crash-effects";
 import { resolveSaucerContact, samplePlanetContacts } from "./saucer-crash.mjs";
@@ -14,7 +15,7 @@ import { createFlight, stepFlight } from "./saucer-flight.mjs";
 
 export function PilotSaucer({type="hexagonal",launchCameraReady,onLandingStatus,trackPositionRef,trackHeadingRef,active=false,visible=true,reducedMotion=false,center=[0,0,0],earthRadius=0,scale=.3}:{onLandingStatus?:(status:string)=>void;launchCameraReady?:RefObject<boolean>;type?:UFOType;trackPositionRef?:RefObject<Vector3>;trackHeadingRef?:RefObject<Vector3>;active?:boolean;visible?:boolean;reducedMotion?:boolean;center?:[number,number,number];earthRadius?:number;scale?:number}) {
  const group=useRef<Group>(null),state=useRef(createFlight()),keys=useRef(new Set<string>());
- const reset=useRef(true),gearRef=useRef(1),engineRef=useRef(0),mode=useRef("docked"),launchAge=useRef(0);
+ const reset=useRef(true),gearRef=useRef(1),engineRef=useRef(0),suspensionRef=useRef(PARKED_COMPRESSION),mode=useRef("docked"),launchAge=useRef(0);
  const handoff=useRef({age:2,from:new Quaternion(),target:new Quaternion(),euler:new Euler(0,0,0,"YXZ")});
  const landing=useRef({requested:false,age:0,start:new Vector3(),rotation:new Quaternion(),status:""});
  const dock=useRef({point:new Vector3(),last:new Vector3(),velocity:new Vector3(),normal:new Vector3(),heading:new Vector3(),rotation:new Quaternion(),seen:false});
@@ -76,9 +77,9 @@ export function PilotSaucer({type="hexagonal",launchCameraReady,onLandingStatus,
    }
    if(!active){mode.current="docked";launchAge.current=0;}
    if(mode.current==="landing"){
-    const sequence=landing.current;sequence.age=reducedMotion?4.2:sequence.age+dt;
-    const progress=landingPose(sequence.start,d.point,d.normal,1.1275*scale+.045*pad.matrixWorld.getMaxScaleOnAxis(),sequence.age,s.position);
-    gearRef.current=progress.gear;engineRef.current=progress.power;s.velocity.copy(d.velocity);shotsRef.current=[];charge.current.cancel();
+    const sequence=landing.current;sequence.age=reducedMotion?LANDING_DURATION:sequence.age+dt;
+    const progress=landingPose(sequence.start,d.point,d.normal,1.1275*scale+.045*pad.matrixWorld.getMaxScaleOnAxis(),sequence.age,s.position,scale);
+    gearRef.current=progress.gear;suspensionRef.current=progress.compression;engineRef.current=progress.power;s.velocity.copy(d.velocity);shotsRef.current=[];charge.current.cancel();
     if(group.current){group.current.userData.launching=false;group.current.position.copy(s.position);group.current.quaternion.copy(sequence.rotation).slerp(d.rotation,landingEase(sequence.age/1.9));}
     trackPositionRef?.current.copy(s.position);trackHeadingRef?.current.copy(d.heading);
     if(progress.done){mode.current="landed";launchAge.current=0;keys.current.clear();}
@@ -88,8 +89,8 @@ export function PilotSaucer({type="hexagonal",launchCameraReady,onLandingStatus,
     const departing=active&&mode.current!=="landed";
     const cameraSettled=!launchCameraReady||launchCameraReady.current;
     if(departing&&cameraSettled){mode.current="launching";launchAge.current+=dt;}
-    const progress=departing&&cameraSettled?launchProgress(launchAge.current,reducedMotion):{lift:0,gear:1,done:false};gearRef.current=progress.gear;engineRef.current=departing&&cameraSettled?Math.min(1,launchAge.current/.7):0;
-    s.position.copy(d.point).addScaledVector(d.normal,1.1275*scale+.045*pad.matrixWorld.getMaxScaleOnAxis()+progress.lift);s.velocity.copy(d.velocity);s.bank=0;s.lean=0;
+    const progress=departing&&cameraSettled?launchProgress(launchAge.current,reducedMotion):{lift:0,gear:1,compression:PARKED_COMPRESSION,done:false};gearRef.current=progress.gear;suspensionRef.current=progress.compression;engineRef.current=departing&&cameraSettled?Math.min(1,launchAge.current/.7):0;
+    s.position.copy(d.point).addScaledVector(d.normal,1.1275*scale+.045*pad.matrixWorld.getMaxScaleOnAxis()+progress.lift-progress.compression*scale);s.velocity.copy(d.velocity);s.bank=0;s.lean=0;
     if(group.current){group.current.userData.launching=mode.current==="launching";group.current.userData.launchAge=launchAge.current;group.current.visible=visible;group.current.position.copy(s.position);group.current.quaternion.copy(d.rotation);}
     trackPositionRef?.current.copy(s.position);trackHeadingRef?.current.copy(d.heading);
     shotsRef.current=[];charge.current.cancel();
@@ -98,7 +99,7 @@ export function PilotSaucer({type="hexagonal",launchCameraReady,onLandingStatus,
    }
   }else if(earthRadius>0){mode.current="flying";}
   landing.current.requested=false;
-  gearRef.current=active?0:1;engineRef.current=active?1:0;
+  gearRef.current=active?0:1;suspensionRef.current=0;engineRef.current=active?1:0;
   stepFlight(s,getFlightInput(keys.current,active),delta,{center:[cx,cy,cz],inner:0,outer:earthRadius?earthRadius*5.51:20});
   if(active)for(const surface of samplePlanetContacts(scene.scene,s.position,scale*2.3,scene.clock.elapsedTime)){
    const incoming=s.velocity.clone(),impact=resolveSaucerContact(s,surface.point,surface.normal,scale*2.3,surface.velocity);
@@ -116,7 +117,7 @@ export function PilotSaucer({type="hexagonal",launchCameraReady,onLandingStatus,
   trackHeadingRef?.current.set(Math.sin(s.yaw)*Math.cos(s.pitch),Math.sin(s.pitch),Math.cos(s.yaw)*Math.cos(s.pitch));
   if(active||s.velocity.lengthSq()>.00001)scene.invalidate();
  },-1);
- return <><group name="piloted-saucer" ref={group} visible={visible}><UFOModel type={type} gearRef={gearRef} engineRef={engineRef} scale={scale} hover={!active&&earthRadius===0} reducedMotion={reducedMotion}/>
+ return <><group name="piloted-saucer" ref={group} visible={visible}><UFOModel type={type} gearRef={gearRef} engineRef={engineRef} suspensionRef={suspensionRef} scale={scale} hover={!active&&earthRadius===0} reducedMotion={reducedMotion}/>
  </group>
  <CrashEffects ship={group} eventRef={crash} reducedMotion={reducedMotion}/>
  <SaucerProjectiles ship={group} shotsRef={shotsRef} charge={charge} reducedMotion={reducedMotion} flight={state} active={active} visible={visible} scale={scale}/>

@@ -4,13 +4,14 @@ import {tmpdir} from "node:os";
 import {join,resolve} from "node:path";
 import {spawnSync} from "node:child_process";
 import {createArchiveSatellite} from "../components/three/satellite/create-archive-satellite.mjs";
+import {createUFOV3} from "../components/three/ufo/create-ufo-v3.mjs";
 import {createReferenceUFO} from "../components/three/ufo/create-reference-ufo.mjs";
 import {Matrix3,Matrix4,Vector3} from "three";
 
 const variant=process.argv[3]??"satellite";
 const output=resolve(process.argv[2]??"docs/references/satellite");
 const folder=join(tmpdir(),"portfolio-satellite-qa");await mkdir(folder,{recursive:true});await mkdir(output,{recursive:true});
-const created=variant==="ufo"?createReferenceUFO():createArchiveSatellite(),root=created.isObject3D?created:created.group??created.model;
+const created=variant==="ufo-v3"?createUFOV3():variant==="ufo"?createReferenceUFO():createArchiveSatellite(),root=created.isObject3D?created:created.group??created.model;
 if(!root)throw new Error("Satellite factory must return a Three Object3D or {group/model}.");
 root.updateMatrixWorld(true);
 const materials=[],materialIds=new Map(),textures=[],textureIds=new Map(),meshes=[];

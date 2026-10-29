@@ -382,3 +382,6 @@ Reference-led prop modeling: for approved concept-to-model work, follow componen
 
 
 Approved satellite checkpoint (2026-10-29): Jacob explicitly approved the rebuilt archive satellite. Preserve its proportions and visual design. The reference-3d-modeling skill is included at .agents/skills/reference-3d-modeling/SKILL.md as well as the personal installation; use the repository copy when working from another machine.
+
+
+Latest interaction checkpoint: UFO Version 3 is a separate selectable angular model, not a replacement of the main-scene default. Landing suspension and Test landing gear share the same analytic functions. Earth/Moon/text dragging uses exclusive nearest-object ownership, disabled during piloting. See docs/current-scene.md and CHANGELOG.md for current values and verification limits.

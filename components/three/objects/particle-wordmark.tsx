@@ -1,4 +1,6 @@
 "use client";
+import {useObjectDrag} from "@/hooks/use-object-drag";
+import {orbitSlideDelta} from "@/components/three/animation/object-drag.mjs";
 import { getProjectileTarget } from "@/components/three/ufo/projectile-collision.mjs";
 import { useDestructibleInstances } from "@/hooks/use-destructible-instances";
 import { useEffect, useMemo, useRef, type RefObject } from "react";
@@ -49,6 +51,7 @@ export function ParticleWordmark({ shipPositionRef, piloting, reducedMotion, rep
   const mesh = useRef<InstancedMesh>(null), elapsed = useRef(0), pulseTime = useRef(0), done = useRef(false), phase = useRef<IntroPhase | null>(null);
   const destroyed=useDestructibleInstances(mesh,{blast:.35,padding:.15,dynamic:true,mode:"explode"});
   const earthBurst=useRef(false);
+  const orbitDrag=useRef({active:false,target:0,value:0,angle:0});
   const orbitTime = useRef(0), targetBuffer=useRef([0,0,0]);
   const repels=useRef(new Float32Array(data.scales.length*3)),repelTarget=useRef([0,0,0]);
   const strengths = useRef(new Float32Array(data.scales.length)), pulls = useRef(new Float32Array(data.scales.length * 3));
@@ -61,7 +64,7 @@ export function ParticleWordmark({ shipPositionRef, piloting, reducedMotion, rep
   useEffect(()=>{mesh.current?.instanceMatrix.setUsage(DynamicDrawUsage);},[]);
   useEffect(() => () => geometry.dispose(), [geometry]);
   useEffect(() => { onPrepared(); }, [onPrepared]);
-  useEffect(() => { elapsed.current = 0; pulseTime.current = 0; orbitTime.current = 0; done.current = false; phase.current = null; strengths.current.fill(0); pulls.current.fill(0); repels.current.fill(0); invalidate(); }, [replay, invalidate]);
+  useEffect(() => { elapsed.current = 0; pulseTime.current = 0; orbitTime.current = 0;orbitDrag.current={active:false,target:0,value:0,angle:0}; done.current = false; phase.current = null; strengths.current.fill(0); pulls.current.fill(0); repels.current.fill(0); invalidate(); }, [replay, invalidate]);
   useEffect(() => {
     const move = (e: PointerEvent) => {
       const b = canvas.getBoundingClientRect();
@@ -73,6 +76,12 @@ export function ParticleWordmark({ shipPositionRef, piloting, reducedMotion, rep
     const timer = reducedMotion ? window.setInterval(invalidate, 80) : undefined;
     return () => { canvas.removeEventListener("pointermove", move); canvas.removeEventListener("pointerleave", leave); window.clearInterval(timer); };
   }, [canvas, invalidate, reducedMotion]);
+  useObjectDrag({object:mesh,radius:data.cubeSize*.9,instances:true,enabled:!piloting&&startRequested,
+    available:()=>done.current&&!earthBurst.current,
+    onStart:(point)=>{orbitDrag.current.active=true;orbitDrag.current.angle=Math.atan2(point.x,point.z+9);cursor.current.active=false;},
+    onMove:({dx,dy,camera})=>{const change=orbitSlideDelta(dx,dy,orbitDrag.current.angle,camera.quaternion);orbitDrag.current.target+=change;orbitDrag.current.angle+=change;},
+    onEnd:()=>{orbitDrag.current.active=false;}
+  });
   useFrame((state, delta) => {
     if (!mesh.current) return;
     mesh.current.visible = startRequested;
@@ -95,9 +104,10 @@ export function ParticleWordmark({ shipPositionRef, piloting, reducedMotion, rep
     const currentPhase: IntroPhase = ready ? "ready" : formed ? "waiting" : "loading";
     if (phase.current !== currentPhase) { phase.current = currentPhase; onPhaseChange(currentPhase); }
     objects.screen.set(cursor.current.x, cursor.current.y); objects.ray.setFromCamera(objects.screen, camera);
-    if (done.current) { pulseTime.current += dt; if (!reducedMotion) orbitTime.current += dt; }
-    const orbitAngle = getTextOrbitAngle(orbitTime.current), orbitCos=Math.cos(orbitAngle), orbitSin=Math.sin(orbitAngle);
-    const magnetic=ready&&!reducedMotion&&cursor.current.active;
+    if (done.current) { pulseTime.current += dt; if (!reducedMotion&&!orbitDrag.current.active) orbitTime.current += dt; }
+    orbitDrag.current.value=reducedMotion?orbitDrag.current.target:MathUtils.damp(orbitDrag.current.value,orbitDrag.current.target,18,dt);
+    const orbitAngle = getTextOrbitAngle(orbitTime.current)+orbitDrag.current.value, orbitCos=Math.cos(orbitAngle), orbitSin=Math.sin(orbitAngle);
+    const magnetic=ready&&!reducedMotion&&!orbitDrag.current.active&&cursor.current.active;
     for (let i = 0; i < data.scales.length; i++) {
       if(destroyed.current.has(i))continue;
       const letter = data.letterIndices[i], ordinal = layout.ordinal[letter];
@@ -126,7 +136,7 @@ export function ParticleWordmark({ shipPositionRef, piloting, reducedMotion, rep
     mesh.current.instanceMatrix.needsUpdate = true;
     if (mesh.current.instanceColor) mesh.current.instanceColor.needsUpdate = true;
     if (ready && !done.current) { done.current = true; onComplete(); }
-    if (!reducedMotion || !ready) state.invalidate();
+    if (!reducedMotion || !ready || Math.abs(orbitDrag.current.value-orbitDrag.current.target)>.0001) state.invalidate();
   });
   return <instancedMesh visible={startRequested} ref={mesh} args={[undefined, undefined, data.scales.length]} frustumCulled={false}>
     <primitive object={geometry} attach="geometry" /><meshStandardMaterial color="#f0f1f5" metalness={0.48} roughness={0.3} />

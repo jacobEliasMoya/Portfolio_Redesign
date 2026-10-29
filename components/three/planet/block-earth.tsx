@@ -1,4 +1,5 @@
 "use client";
+import {useObjectDrag} from "@/hooks/use-object-drag";
 import { ImpactSmoke } from "./impact-smoke";
 import { PLANET_HITS } from "./planet-explosion.mjs";
 import { getProjectileTarget } from "@/components/three/ufo/projectile-collision.mjs";
@@ -60,25 +61,12 @@ export function BlockEarth({ children, radius = 3, position = [0, 0, 0], rotatio
   const dragging = useRef(false);
   const idleSpeed = useRef(0);
   const camera = useThree((state) => state.camera);
-  const canvas = useThree((state) => state.gl.domElement);
-  const invalidate = useThree((state) => state.invalidate);
   const turn = useRef(0);
-  useEffect(() => {
-    if (!draggable) return;
-    let pointer: number | null = null, lastX = 0, lastY = 0;
-    const touches = new Set<number>();
-    const down = (event: PointerEvent) => {
-      if (event.pointerType === "touch") {
-        touches.add(event.pointerId);
-        if (touches.size > 1) { const captured = pointer; pointer = null; dragging.current = false; if (captured !== null && canvas.hasPointerCapture(captured)) canvas.releasePointerCapture(captured); return; }
-      }
-      if (event.button !== 0 || pointer !== null) return; pointer = event.pointerId; lastX = event.clientX; lastY = event.clientY; dragging.current = true; canvas.setPointerCapture(pointer); invalidate(); };
-    const move = (event: PointerEvent) => { if (pointer !== event.pointerId) return; applyEarthDrag(orientation.current, event.clientX - lastX, event.clientY - lastY, camera.quaternion); lastX = event.clientX; lastY = event.clientY; invalidate(); };
-    const up = (event: PointerEvent) => { touches.delete(event.pointerId); if (pointer !== event.pointerId) return; pointer = null; dragging.current = false; if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId); };
-    const previous = canvas.style.touchAction; canvas.style.setProperty("touch-action", "none");
-    canvas.addEventListener("pointerdown", down); canvas.addEventListener("pointermove", move); canvas.addEventListener("pointerup", up); canvas.addEventListener("pointercancel", up); canvas.addEventListener("lostpointercapture", up);
-    return () => { dragging.current = false; if (pointer !== null && canvas.hasPointerCapture(pointer)) canvas.releasePointerCapture(pointer); canvas.style.setProperty("touch-action", previous); canvas.removeEventListener("pointerdown", down); canvas.removeEventListener("pointermove", move); canvas.removeEventListener("pointerup", up); canvas.removeEventListener("pointercancel", up); canvas.removeEventListener("lostpointercapture", up); };
-  }, [canvas, draggable, invalidate, camera]);
+  useObjectDrag({object:mesh,radius:data.radius*1.035,enabled:draggable&&revealed,
+    available:()=>!mesh.current||((getProjectileTarget(mesh.current)?.planetPhase()??"intact")==="intact"),
+    onStart:()=>{dragging.current=true;},onEnd:()=>{dragging.current=false;},
+    onMove:({dx,dy})=>{applyEarthDrag(orientation.current,dx,dy,camera.quaternion);}
+  });
   const amount = useRef(reducedMotion && revealed ? 1 : 0);
   const announced = useRef(false);
   const geometry = useMemo(() => {const tile=createHexagonalEarthGeometry();tile.setAttribute("impactHeat",new InstancedBufferAttribute(new Float32Array(data.sizes.length),1));return tile;}, [data.sizes.length]);

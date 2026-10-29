@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {launchProgress,LAUNCH_DURATION} from "../components/three/ufo/lunar-launch.mjs";
 test("lunar launch lifts before gear retracts and finishes at safe clearance",()=>{
- assert.deepEqual(launchProgress(0),{lift:0,gear:1,done:false});const early=launchProgress(.8);assert.ok(early.lift>0);assert.equal(early.gear,1);
+ assert.deepEqual(launchProgress(0),{lift:0,gear:1,compression:.035,done:false});const early=launchProgress(.8);assert.ok(early.lift>0);assert.equal(early.gear,1);
  assert.ok(launchProgress(1.4).gear<1);const end=launchProgress(LAUNCH_DURATION);assert.equal(end.gear,0);assert.equal(end.lift,2.5);assert.equal(end.done,true);
  for(let t=0;t<LAUNCH_DURATION;t+=.02){assert.ok(launchProgress(t+.01).lift>=launchProgress(t).lift);assert.ok(launchProgress(t).gear>=0);}
  assert.deepEqual(launchProgress(0,true),end);

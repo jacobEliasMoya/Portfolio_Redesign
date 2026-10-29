@@ -9,7 +9,7 @@ test("landing starts continuously, extends gear, and seats on a moving pad",()=>
  const start=new Vector3(2,4,1),pad=new Vector3(),normal=new Vector3(0,1,0),out=new Vector3();
  landingPose(start,pad,normal,.45,0,out);assert.ok(out.distanceTo(start)<1e-9);
  const middle=landingPose(start,pad,normal,.45,2,out);assert.equal(middle.done,false);assert.ok(middle.gear>.9);
- pad.set(1,0,0);const end=landingPose(start,pad,normal,.45,LANDING_DURATION,out);assert.equal(end.done,true);assert.equal(end.gear,1);assert.equal(end.power,0);assert.ok(out.distanceTo(new Vector3(1,.45,0))<1e-9);
+ pad.set(1,0,0);const end=landingPose(start,pad,normal,.45,LANDING_DURATION,out);assert.equal(end.done,true);assert.equal(end.gear,1);assert.equal(end.power,0);assert.ok(out.distanceTo(new Vector3(1,.45-.035,0))<1e-9);
 });
 
 test("landing rejects the former wide margin and shallower approach",()=>{

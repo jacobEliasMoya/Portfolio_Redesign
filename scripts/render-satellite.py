@@ -86,12 +86,13 @@ scene.view_settings.look="AgX - Medium High Contrast"
 camera_data=bpy.data.cameras.new("asset-review-camera");camera_data.type="ORTHO";camera_data.ortho_scale=7.1
 camera=bpy.data.objects.new("asset-review-camera",camera_data);bpy.context.collection.objects.link(camera);scene.camera=camera
 views=[("satellite-model-front",(4.5,2.8,8)),("satellite-model-rear",(-4,2.6,-8)),("satellite-model-front-ortho",(0,.25,9)),("satellite-model-side",(9,.25,0))]
-if variant=="ufo":
+if variant in ("ufo","ufo-v3"):
     camera_data.ortho_scale=5.9
     area("underside fill",(1,-4,3),500,4,(.8,.9,1))
     views=[("ufo-reference-three-quarter",(4.5,3.2,8)),("ufo-reference-front",(0,1.2,9)),("ufo-reference-rear",(0,1.2,-9)),("ufo-reference-side",(9,.25,0)),("ufo-reference-top",(.001,9,0)),("ufo-reference-underside",(.001,-9,.001))]
 for name,location in views:
-    if variant=="ufo":camera_data.ortho_scale=7.2 if name.endswith(("top","underside")) else 5.9
+    if variant=="ufo-v3":name=name.replace("ufo-reference","ufo-v3")
+    if variant in ("ufo","ufo-v3"):camera_data.ortho_scale=7.2 if name.endswith(("top","underside")) else 5.9
     camera.location=coord(location);camera.rotation_euler=(Vector(coord((0,.25,0)))-camera.location).to_track_quat("-Z","Y").to_euler()
     scene.render.filepath=str(output/(name+".png"));bpy.ops.render.render(write_still=True)
 print("Offline exact-asset renders saved to",output)

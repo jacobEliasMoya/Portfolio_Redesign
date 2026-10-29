@@ -1,4 +1,6 @@
 "use client";
+import {useObjectDrag} from "@/hooks/use-object-drag";
+import {applyEarthDrag} from "../planet/earth-rotation.mjs";
 import { LunarFlag } from "./lunar-flag";
 import { LunarLandingPad } from "./lunar-landing-pad";
 import { ImpactSmoke } from "../planet/impact-smoke";
@@ -9,7 +11,7 @@ import { getProjectileTarget } from "@/components/three/ufo/projectile-collision
 import { useDestructibleInstances } from "@/hooks/use-destructible-instances";
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame, useLoader } from "@react-three/fiber";
-import { BufferGeometry, Color, DoubleSide, DynamicDrawUsage, FileLoader, Float32BufferAttribute, Group, InstancedBufferAttribute, InstancedMesh, MathUtils, Object3D, SRGBColorSpace, Vector3 } from "three";
+import { BufferGeometry, Color, DoubleSide, DynamicDrawUsage, FileLoader, Float32BufferAttribute, Group, InstancedBufferAttribute, InstancedMesh, MathUtils, Object3D, Quaternion, SRGBColorSpace, Vector3 } from "three";
 import { createHexagonalEarthGeometry } from "@/components/three/planet/hexagonal-earth-geometry.mjs";
 import { getMoonOrbitPose, MOON_ORBIT, releaseMoon, advanceFreeMoon } from "./moon-orbit.mjs";
 
@@ -26,10 +28,15 @@ function parseMoon(raw: unknown): LunarVolume {
   return data;
 }
 /** Reusable survey-derived solid lunar surface; local +Z is the near-side face. */
-export function BlockMoon({ radius = .82, rotation = [0,0,0], reducedMotion=false }: { radius?: number; rotation?: [number,number,number]; reducedMotion?:boolean }) {
+export function BlockMoon({ radius = .82, rotation = [0,0,0], reducedMotion=false,draggable=false }: { radius?: number; rotation?: [number,number,number]; reducedMotion?:boolean;draggable?:boolean }) {
   const raw = useLoader(FileLoader,"/models/moon/block-moon.json?revision=solid-chunky-3");
   const data = useMemo(()=>parseMoon(raw),[raw]);
   const mesh = useRef<InstancedMesh>(null),interior=useRef<Group>(null),processedMarks=useRef(0);
+  const control=useRef<Group>(null),orientation=useRef(new Quaternion()),dragSpace=useMemo(()=>new Quaternion(),[]);
+  useObjectDrag({object:mesh,radius:.94,enabled:draggable,
+    available:()=>!mesh.current||((getProjectileTarget(mesh.current)?.planetPhase()??"intact")==="intact"),
+    onMove:({dx,dy,camera})=>{if(!control.current?.parent)return;control.current.parent.getWorldQuaternion(dragSpace);dragSpace.invert().multiply(camera.quaternion);applyEarthDrag(orientation.current,dx,dy,dragSpace);}
+  });
   useDestructibleInstances(mesh,{foundation:.70,blast:.10,padding:.012,mode:"explode",threshold:PLANET_HITS.moon});
   const geometry = useMemo(()=>{const tile=createHexagonalEarthGeometry();tile.setAttribute("impactHeat",new InstancedBufferAttribute(new Float32Array(data.sizes.length),1));return tile;},[data.sizes.length]);
   useEffect(()=>()=>geometry.dispose(),[geometry]);
@@ -58,6 +65,7 @@ export function BlockMoon({ radius = .82, rotation = [0,0,0], reducedMotion=fals
     if(mesh.current.instanceColor)mesh.current.instanceColor.needsUpdate=true;
   },[data]);
   useFrame((state,delta)=>{
+    if(control.current){if(reducedMotion)control.current.quaternion.copy(orientation.current);else control.current.quaternion.slerp(orientation.current,1-Math.exp(-14*Math.min(delta,.1)));if(control.current.quaternion.angleTo(orientation.current)>.0001)state.invalidate();}
     const target=mesh.current?getProjectileTarget(mesh.current):null;
     const phase=target?.stepPlanetExplosion(delta,reducedMotion)??"intact";
     if(phase!=="gone"&&target){
@@ -66,8 +74,8 @@ export function BlockMoon({ radius = .82, rotation = [0,0,0], reducedMotion=fals
     }
     if(interior.current)interior.current.visible=phase==="intact"||phase==="charging";
     if(phase==="charging"||phase==="exploding")state.invalidate();
-  });
-  return <group scale={radius/data.radius} rotation={rotation}>
+  },-1.5);
+  return <group scale={radius/data.radius} rotation={rotation}><group ref={control}>
     <group ref={interior}><mesh><sphereGeometry args={[.70,48,32]} /><meshStandardMaterial color="#85838a" roughness={.95} side={DoubleSide} transparent={false} /></mesh>
     <mesh><primitive object={skin} attach="geometry"/><meshStandardMaterial vertexColors roughness={.94} metalness={0} side={DoubleSide} transparent={false}/></mesh>
     </group><instancedMesh ref={mesh} args={[undefined,undefined,data.sizes.length]} frustumCulled={false}>
@@ -76,12 +84,12 @@ export function BlockMoon({ radius = .82, rotation = [0,0,0], reducedMotion=fals
     <LunarLandingPad moon={mesh}/>
     <LunarFlag moon={mesh} reducedMotion={reducedMotion}/>
     <ImpactSmoke earth={mesh} surfaceRadius={data.radius} reducedMotion={reducedMotion}/>
-  </group>;
+  </group></group>;
 }
 
 /** The same orbital phase drives position and yaw: exactly one spin per revolution. */
-export function OrbitingMoon({ earthRadius, enabled, reducedMotion, center = [0,.35,-9] }: {
-  earthRadius: number; enabled: boolean; reducedMotion: boolean; center?: [number,number,number];
+export function OrbitingMoon({ earthRadius, enabled, reducedMotion, draggable=false, center = [0,.35,-9] }: {
+  earthRadius: number; enabled: boolean; reducedMotion: boolean; draggable?:boolean; center?: [number,number,number];
 }) {
   const group = useRef<Group>(null), reveal = useRef<Group>(null), elapsed = useRef(0), amount = useRef(0);
   const released=useRef<ReturnType<typeof releaseMoon>|null>(null);
@@ -108,7 +116,7 @@ export function OrbitingMoon({ earthRadius, enabled, reducedMotion, center = [0,
   },-2);
   return <group position={center} rotation={[MOON_ORBIT.inclination,0,MOON_ORBIT.node]}>
     <group ref={group} position={initial.position as [number,number,number]} rotation={[0,initial.yaw,0]}>
-      <group ref={reveal} scale={0}><BlockMoon radius={moonRadius} reducedMotion={reducedMotion} /></group>
+      <group ref={reveal} scale={0}><BlockMoon radius={moonRadius} reducedMotion={reducedMotion} draggable={draggable&&enabled} /></group>
     </group>
   </group>;
 }

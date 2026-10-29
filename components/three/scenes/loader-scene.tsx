@@ -20,9 +20,9 @@ function EarthBackdrop({ reducedMotion, onRevealed, earthReady, piloting }: { re
   return <BlockEarth position={[0, 0.35, -9]} radius={Math.min(6.5, aspect * 9.4)} autoRotate draggable={!piloting} revealed onRevealed={onRevealed} reducedMotion={reducedMotion}><CloudLayer enabled={earthReady} reducedMotion={reducedMotion} /></BlockEarth>;
 }
 
-function LunarCompanion({ enabled, reducedMotion }: { enabled: boolean; reducedMotion: boolean }) {
+function LunarCompanion({ enabled, reducedMotion, piloting }: { enabled: boolean; reducedMotion: boolean; piloting:boolean }) {
   const aspect = useThree((state)=>state.size.width/Math.max(1,state.size.height));
-  return <OrbitingMoon earthRadius={Math.min(6.5,aspect*9.4)} enabled={enabled} reducedMotion={reducedMotion} />;
+  return <OrbitingMoon draggable={!piloting} earthRadius={Math.min(6.5,aspect*9.4)} enabled={enabled} reducedMotion={reducedMotion} />;
 }
 
 function FlightCompanion({onLandingStatus,launchCameraReady,active,visible,reducedMotion,trackPositionRef,trackHeadingRef}:{onLandingStatus:(status:string)=>void;launchCameraReady:RefObject<boolean>;active:boolean;visible:boolean;reducedMotion:boolean;trackPositionRef:RefObject<Vector3>;trackHeadingRef:RefObject<Vector3>}) {
@@ -68,7 +68,7 @@ export default function LoaderScene({ reducedMotion, replay, zoomSteps, zoomRese
     <directionalLight position={[-4, 0, 3]} intensity={1.7} color="#c6d0df" />
     <directionalLight position={[1, -3, -2]} intensity={2} color="#ffffff" />
     <Suspense fallback={null}><EarthBackdrop piloting={piloting} earthReady={earthReady} onRevealed={onEarthReady} reducedMotion={reducedMotion} /></Suspense>
-    <Suspense fallback={null}><LunarCompanion enabled={earthReady} reducedMotion={reducedMotion} /></Suspense>
+    <Suspense fallback={null}><LunarCompanion piloting={piloting} enabled={earthReady} reducedMotion={reducedMotion} /></Suspense>
     <Suspense fallback={null}><ParticleWordmark shipPositionRef={flightPosition} piloting={piloting} startRequested={earthReady} reducedMotion={reducedMotion} replay={replay} assetsReady={assetsReady} onPhaseChange={onPhaseChange} onPrepared={onPrepared} onComplete={() => { setFlightReady(true); onComplete(); }} /></Suspense>
     <FlightCompanion onLandingStatus={setLandingStatus} launchCameraReady={launchCameraReady} trackHeadingRef={flightHeading} trackPositionRef={flightPosition} active={piloting} visible={earthReady} reducedMotion={reducedMotion}/>
   </Canvas>

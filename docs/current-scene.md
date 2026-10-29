@@ -273,3 +273,23 @@ Jacob approved the rebuilt archive satellite ("its absolutly awesome"). Preserve
 ## Separate UFO reference rebuild — 2026-10-29
 
 Using reference-3d-modeling, built a new reference variant from docs/references/ufo-hexagonal-six-views.png. The current hexagonal and Classic models are preserved; main-scene default remains hexagonal. /ufo opens the new variant with a comparison selector. Broad regular hex plates, shallower silhouette, inset belt, faceted teal cockpit and recessed engine/vent wells; 120 plates, 17 total batches and 15,012 triangles including hidden gear. Original movement/power/gear/weapon conventions retained. Six exact-model offline Blender views saved in docs/references/ufo-reference-rebuild. See components/three/ufo/reference-model.md for dimensions and verification limits. No approval to replace the main-scene saucer assumed.
+
+UFO refinement: continuous cockpit collar/gasket, calmer upper plate relief, deeper teal canopy, slimmer rim rails and further inset lamps. Same 17 total batches, 15,588 triangles including gear; four targeted tests, lint/build pass. New generated hex-design evolution options saved with UFO references for review before constructing chosen next version.
+
+## UFO Version 3 — angular design
+
+Jacob chose option 3 of hex-design-evolution-options.png. Built standalone v3 factory/component with true six-sided shallow hull, fitted beveled hex armor, actual canopy/engine/vent cutouts, six rim lights, six-sided collar, engine and vent surrounds. 174 panel pieces, 17 total batches / 11,986 triangles including hidden gear. /ufo defaults to Version 3 with previous versions available; main-scene default remains unchanged. Seven targeted UFO tests, lint/build pass. Six exact-model offline Blender views saved under docs/references/ufo-v3; three-quarter/underside/side inspected. See components/three/ufo/ufo-v3.md.
+
+## Landing gear suspension
+
+Added analytic touchdown compression/rebound and prelaunch crouch/unload shared by current hexagonal, reference and v3 models. Body and leg transforms compensate to anchor feet during compression. Landing contact at 4.2s, settlement complete at 5.05s; launch remains 2.6s with .35s load release before lift. Reduced motion skips bounce. /ufo includes Test landing gear for inspection. Eight targeted motion tests pass; no new geometry, packages or lights. See UFO README for scope and review limits.
+
+## Independent object dragging
+
+Earth no longer rotates from arbitrary canvas drags: a shared nearest-object gesture controller now selects Earth, Moon or the settled particle lettering on pointerdown. Terrain uses sphere proxies; lettering uses per-instance sphere proxies only on pointerdown, avoiding per-triangle raycasts over terrain meshes. One pointer owner prevents simultaneous rotations; pointer loss, blur, multiple touches and mode changes cancel cleanly. Blank-space dragging does not rotate Earth.
+
+Moon gets a camera-relative manual orientation offset inside its tidal-lock/orbit parent; pad, flag and terrain rotate together, while orbital translation stays unchanged. The control frame updates before the parked ship samples the pad. The selected manual orientation persists; tidal-lock mathematics remains the underlying baseline.
+
+Dragging formed Jakes Space lettering adjusts its angular offset on the existing Y orbit, preserving height/radius. Auto-travel pauses while held and resumes on release. Screen movement is projected onto the orbit tangent for the current camera; a short damped catch-up softens the drag. No orbit tilt or font changes. Intro, destroyed objects and pilot mode disable their respective drag actions; reduced motion permits direct manipulation without automatic motion. Inspection pages retain their existing OrbitControls.
+
+Twelve relevant geometry/drag/orbit tests pass. Four new drag tests cover exclusive nearest ownership, disabled/blank hits, touch/capture/blur cleanup, transformed instances and orbit projection. Lint/build pass; browser interaction review remains blocked by saved localhost permission.

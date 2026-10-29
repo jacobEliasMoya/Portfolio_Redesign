@@ -1,5 +1,14 @@
 # Change log
 
+## 2026-10-29 — UFO Version 3, suspension and independent dragging
+
+- Build Version 3 from the selected angular design: six-sided hull, fitted beveled armor, six rim lights, hex canopy collar, engine and vent wells. Retain previous UFO versions and the main-scene default; add Version 3 to /ufo comparison controls.
+- Refine the reference rebuild's canopy collar, armor relief, glass and rim fittings; save the design study and six exact-model renders for each revision.
+- Add coordinated landing suspension: planted feet, damped touchdown compression/rebound, parked load and a prelaunch crouch/unload. Landing finishes after settling; reduced motion skips the bounce. Add Test landing gear to /ufo.
+- Add nearest-object drag ownership for Earth, Moon and lettering. Moon rotates independently within its existing orbit; text slides along its current orbit and resumes automatic travel on release. Preserve pilot controls and touch/capture cancellation.
+
+Validation: all 122 scene tests, ESLint and production build pass. Offline model views inspected. Agent browser interaction review remains unavailable under the saved localhost permission; motion feel still needs user review.
+
 ## 2026-10-29 — Separate UFO reference rebuild
 
 - Build an independent reference UFO using the reference-3d-modeling workflow and the approved six-view design: broad stepped hex plates, shallow disc, cyan light belt, faceted canopy and recessed underside engine/vents.

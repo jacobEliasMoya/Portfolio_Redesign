@@ -3,10 +3,11 @@ import {useEffect,useMemo,useRef,type ComponentProps,type RefObject} from "react
 import {useFrame} from "@react-three/fiber";
 import {AdditiveBlending,Group,InstancedMesh,MeshStandardMaterial,Object3D,LatheGeometry,ShaderMaterial,Vector2} from "three";
 import type {ClassicUFO} from "./classic-ufo";
+import {applyLandingGear} from "./landing-suspension.mjs";
 import {SaucerPropulsion} from "./saucer-propulsion";
 import {HexagonalHull} from "./hexagonal-hull";
 import {createHexCanopy} from "./hexagonal-canopy-geometry.mjs";
-export function HexagonalUFO({scale=1,position=[0,0,0],rotation=[0,0,0],hover=true,reducedMotion=false,gearRef,engineRef}:ComponentProps<typeof ClassicUFO>&{gearRef?:RefObject<number>;engineRef?:RefObject<number>}){
+export function HexagonalUFO({scale=1,position=[0,0,0],rotation=[0,0,0],hover=true,reducedMotion=false,gearRef,engineRef,suspensionRef}:ComponentProps<typeof ClassicUFO>&{gearRef?:RefObject<number>;engineRef?:RefObject<number>;suspensionRef?:RefObject<number>}){
  const halos=useRef<InstancedMesh>(null),power=useRef(0);
  const gear=useRef<Group>(null);
  const root=useRef<Group>(null),rotor=useRef<Group>(null),lamps=useRef<InstancedMesh>(null),clock=useRef(0);
@@ -14,7 +15,7 @@ export function HexagonalUFO({scale=1,position=[0,0,0],rotation=[0,0,0],hover=tr
  const core=useMemo(()=>new LatheGeometry([[0,-.42],[.6,-.42],[1.25,-.30],[1.95,-.15],[2.22,-.075],[2.22,.075],[1.95,.13],[1.25,.34],[.78,.43],[0,.43]].map(p=>new Vector2(...p)),48),[]);
  useEffect(()=>()=>{core.dispose();canopy.glass.dispose();canopy.frame.dispose();},[core,canopy]);
  useEffect(()=>{const t=new Object3D();for(let i=0;i<16;i++){const a=i*Math.PI/8;t.position.set(Math.sin(a)*2.235,0,Math.cos(a)*2.235);t.rotation.y=a;t.updateMatrix();lamps.current?.setMatrixAt(i,t.matrix);t.position.set(Math.sin(a)*2.265,0,Math.cos(a)*2.265);halos.current?.setMatrixAt(i,t.matrix);}if(lamps.current)lamps.current.instanceMatrix.needsUpdate=true;if(halos.current)halos.current.instanceMatrix.needsUpdate=true;},[]);
- useFrame((state,delta)=>{if(gear.current){const amount=gearRef?.current??1;gear.current.visible=amount>.01;gear.current.position.y=(1-amount)*.65;gear.current.scale.y=Math.max(.01,amount);}
+ useFrame((state,delta)=>{applyLandingGear(gear.current,gearRef?.current??1,suspensionRef?.current??0);
  const dt=Math.min(delta,.1);
  const target=engineRef?.current??0;power.current=reducedMotion?target:power.current+(target-power.current)*(1-Math.exp(-5*dt));
  if(lamps.current)(lamps.current.material as MeshStandardMaterial).emissiveIntensity=1.25+power.current*3;
