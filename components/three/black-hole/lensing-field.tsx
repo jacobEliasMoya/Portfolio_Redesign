@@ -17,7 +17,8 @@ export function LensingField(){
   atlasCamera.position.copy(vectors.position).addScaledVector(vectors.normal,15);atlasCamera.up.set(0,0,-1).transformDirection(disc.matrixWorld);atlasCamera.lookAt(vectors.position);atlasCamera.updateMatrixWorld();
   mesh.position.copy(vectors.position);mesh.quaternion.copy(camera.quaternion);mesh.updateMatrixWorld();
   const shell=scene.getObjectByName("matte-hex-sphere"),visible=shell?.visible,previous=gl.getRenderTarget();mesh.visible=false;if(shell)shell.visible=false;
-  try{gl.setRenderTarget(target);gl.clear();gl.render(scene,atlasCamera);}finally{gl.setRenderTarget(previous);mesh.visible=true;if(shell)shell.visible=visible??true;}
+  const excluded:{object:import("three").Object3D;visible:boolean}[]=[];scene.traverse(object=>{if(object.userData.excludeFromDiscAtlas){excluded.push({object,visible:object.visible});object.visible=false;}});
+  try{gl.setRenderTarget(target);gl.clear();gl.render(scene,atlasCamera);}finally{gl.setRenderTarget(previous);mesh.visible=true;if(shell)shell.visible=visible??true;for(const entry of excluded)entry.object.visible=entry.visible;}
   camera.getWorldPosition(vectors.view);vectors.view.sub(vectors.position).normalize();const edgeOn=1-Math.abs(vectors.normal.dot(vectors.view));live.uArcVisibility.value=.35+.65*Math.pow(edgeOn,1.1);
   vectors.inverse.copy(disc.matrixWorld).invert();camera.getWorldPosition(vectors.view);vectors.view.applyMatrix4(vectors.inverse);live.uAzimuth.value=Math.atan2(vectors.view.x,vectors.view.z);
  });

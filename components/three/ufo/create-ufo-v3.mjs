@@ -1,13 +1,20 @@
-import {Box3,CylinderGeometry,Group,Mesh,MeshPhysicalMaterial,MeshStandardMaterial,Vector3} from "three";
+import {Box3,Float32BufferAttribute,CylinderGeometry,Group,Mesh,MeshPhysicalMaterial,MeshStandardMaterial,Vector3} from "three";
 import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js";
 import {mergeGeometries,mergeVertices} from "three/addons/utils/BufferGeometryUtils.js";
 import {createHexCanopy} from "./hexagonal-canopy-geometry.mjs";
 import {createHexLoft,createV3PanelLayout,createV3PanelGeometry,V3_RADIUS} from "./ufo-v3-geometry.mjs";
 
-function batch(group){group.updateMatrixWorld(true);const buckets=new Map();group.traverse(n=>{if(!n.isMesh)return;let g=n.geometry.clone().applyMatrix4(n.matrixWorld);if(g.index){const raw=g.toNonIndexed();g.dispose();g=raw;}if(!buckets.has(n.material))buckets.set(n.material,[]);buckets.get(n.material).push(g);});group.clear();for(const [material,parts] of buckets){const joined=mergeGeometries(parts,false),g=mergeVertices(joined,1e-6),mesh=new Mesh(g,material);mesh.name=material.name;group.add(mesh);joined.dispose();parts.forEach(p=>p.dispose());}}
+function batch(group,fragments=false){let fragmentIndex=0;group.updateMatrixWorld(true);const buckets=new Map();group.traverse(n=>{if(!n.isMesh)return;let g=n.geometry.clone().applyMatrix4(n.matrixWorld);if(g.index){const raw=g.toNonIndexed();g.dispose();g=raw;}if(fragments){
+ const pos=g.attributes.position;g.computeBoundingBox();const size=g.boundingBox.getSize(new Vector3()),split=Math.max(size.x,size.z)>1.5,sectors=new Map(),triangleKeys=[];
+ // Large continuous rails/foundation separate into six sectors; armor stays intact.
+ for(let i=0;i<pos.count;i+=3){const x=(pos.getX(i)+pos.getX(i+1)+pos.getX(i+2))/3,z=(pos.getZ(i)+pos.getZ(i+1)+pos.getZ(i+2))/3,key=split?Math.floor((Math.atan2(z,x)+Math.PI)/(Math.PI/3))%6:0;triangleKeys.push(key);if(!sectors.has(key))sectors.set(key,{sum:new Vector3(),count:0,id:fragmentIndex++});const part=sectors.get(key);for(let j=0;j<3;j++){part.sum.add(new Vector3().fromBufferAttribute(pos,i+j));part.count++;}}
+ for(const part of sectors.values())part.sum.divideScalar(part.count);
+ const centers=new Float32Array(pos.count*3),ids=new Float32Array(pos.count);for(let i=0;i<pos.count;i++){const part=sectors.get(triangleKeys[Math.floor(i/3)]);part.sum.toArray(centers,i*3);ids[i]=part.id;}
+ g.setAttribute("aFragmentCenter",new Float32BufferAttribute(centers,3));g.setAttribute("aFragmentIndex",new Float32BufferAttribute(ids,1));
+ }if(!buckets.has(n.material))buckets.set(n.material,[]);buckets.get(n.material).push(g);});group.clear();for(const [material,parts] of buckets){const joined=mergeGeometries(parts,false),g=mergeVertices(joined,1e-6),mesh=new Mesh(g,material);mesh.name=material.name;group.add(mesh);joined.dispose();parts.forEach(p=>p.dispose());}}
 
 /** Option 3: a six-sided shallow hull with real clipped armor/cavity outlines. +Z is front. */
-export function createUFOV3(){
+export function createUFOV3({fragments=false}={}){
  const root=new Group(),disc=new Group(),fixed=new Group(),gear=new Group();root.name="ufo-v3";disc.name="v3-disc";fixed.name="v3-cockpit";gear.name="v3-gear";
  const material=(name,color,metalness=.5,roughness=.5,extra={})=>{const m=new MeshStandardMaterial({color,metalness,roughness,...extra});m.name=name;return m;};
  const metal=material("v3-metal","#969b94",.64,.43),dark=material("v3-recess","#18252a",.4,.64),trim=material("v3-trim","#646e70",.7,.37),cyan=material("v3-navigation","#75eef4",.15,.28,{emissive:"#19cbd5",emissiveIntensity:1.1}),core=material("v3-engine","#57e3ef",.2,.3,{emissive:"#12c8d9",emissiveIntensity:.8}),armor=["#9ba096","#8b938d","#a8aba0","#7b8680","#969b90"].map((c,i)=>material(`v3-armor-${i}`,c,.48,.57));
@@ -44,7 +51,7 @@ export function createUFOV3(){
  add(new CylinderGeometry(.70,.70,.022,12),dark,[0,.49,0]);add(box(.23,.22,.18),dark,[0,.62,-.15]);
  // Long enough to join a flat nose edge while preserving the +Z projectile convention.
  add(new CylinderGeometry(.18,.24,.48,6),metal,[0,.24,2.10],[Math.PI/2,0,0]);add(new CylinderGeometry(.145,.18,.12,6),dark,[0,.24,2.38],[Math.PI/2,0,0]);add(new CylinderGeometry(.10,.10,.02,6),cyan,[0,.24,2.45],[Math.PI/2,0,0]);
- batch(disc);batch(fixed);batch(gear);root.add(disc,fixed,gear);owned.forEach(g=>g.dispose());
+ batch(disc,fragments);batch(fixed,fragments);batch(gear,fragments);root.add(disc,fixed,gear);owned.forEach(g=>g.dispose());
  const stats={panels:top.length+bottom.length,upperPanels:top.length,draws:0,triangles:0,bounds:new Box3().setFromObject(root).getSize(new Vector3()).toArray()};root.traverse(n=>{if(n.isMesh){stats.draws++;stats.triangles+=(n.geometry.index?.count??n.geometry.attributes.position.count)/3;}});root.userData.modelStats=stats;gear.visible=false;return root;
 }
 export function disposeUFOV3(root){const mats=new Set();root.traverse(n=>{if(n.isMesh){n.geometry.dispose();mats.add(n.material);}});mats.forEach(m=>m.dispose());}

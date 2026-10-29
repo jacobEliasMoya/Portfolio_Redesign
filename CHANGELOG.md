@@ -56,3 +56,19 @@ Validation: all 110 automated tests, ESLint and production build pass. Jacob app
 - Record the active settings in docs/current-scene.md and preserve exploratory refinements in the existing architecture/working agreement documents.
 
 Validation: production build, ESLint and 27 automated tests. Browser visual/device validation remains outstanding. This checkpoint is source control only; no deployment was requested.
+
+
+### Black-hole UFO consumption preview
+- Added a replayable proximity test: Version 3 UFO peels apart in original armor/mechanical fragments, spirals inward and vanishes into the core.
+- Retained batched rendering, cached geometry, original UFO defaults and the approved lensing; excluded the craft from the disc atlas.
+- Added reset, shared pause, reduced-motion behavior and proximity/geometry regression tests.
+
+
+### Earth and Moon consumption tests
+- Added UFO / Earth / Moon selection to the black-hole preview with shared send, replay, reset and pause controls.
+- Reused original planet hex tiles and colors in one surface draw per target; GPU consumption leaves instance buffers static. Added receding solid backing and regression coverage.
+
+
+### Planet consumption stream refinement
+- Replaced uniform detached-shell motion with seeded acceleration, independent tile tumble, and a narrow curved particle stream that forms immediately after detachment.
+- Kept GPU instancing, deterministic replay, existing colors and UFO behavior. Added continuity and stream-convergence checks.

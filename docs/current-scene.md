@@ -311,3 +311,24 @@ Secondary lens image increased after positive user review: apparent radial span 
 Lensing smear correction: user reported smeared/stretched appearance. Replaced edge-on viewing-camera source capture with an orthographic top-down disc atlas, square384–768px. Direct polar sampling renders the secondary upper/lower arcs; large viewport UV warp removed. Empty atlas areas stay transparent over unchanged primary scene. Same single capture; no duplicated geometry. Four V2 tests validate bounds/source mapping; browser visual review remains unavailable to agent. This supersedes prior screen-warp parameters.
 
 Level-disc blue-artifact correction: lens atlas includes cool-lit graphite; edge-on arc strength exposed those reflections as a blue secondary ring. Secondary-image alpha now uses a red-dominant warm-light mask (normalized warmth .035–.16), rejecting neutral/blue reflections while preserving amber emission. Original disc materials/lighting and Version1 unchanged. Added warm/cool source regression checks; live visual confirmation remains needed.
+
+
+### UFO consumption test (2026-10-29)
+
+The /black-hole preview includes a separate Version 3 UFO and Send UFO / Replay / Reset controls. It approaches from X=8.1 at 0.65 units/sec; each original panel or mechanical piece releases when its center reaches the 6.3-unit capture sphere. Larger continuous rails/foundation split into six angular sectors. Pieces spiral inward over 3.4 seconds, shrink late, and disappear behind the opaque core. This is a staged proximity demonstration, not integration with free-flight gameplay or a gravity simulation.
+
+Fragment attributes are prepared once, preserving the original material batches and triangle count. The vertex shader moves/rotates whole pieces using a shared clock; replay changes that clock without rebuilding geometry. Original UFO factory defaults and all other previews remain unchanged. Pause orbit also pauses consumption; reduced motion gives the direct consumed result. The UFO is excluded from the disc atlas to avoid cyan contamination of the approved warm lensing.
+
+Verification: deterministic proximity timing, bounded progress, complete finite fragment attributes, original geometry/batch preservation, shader injection and reuse are covered by scripts/test-black-hole-consumption.mjs. Browser appearance and frame time require user review because saved localhost browser permission is blocked.
+
+
+### Earth and Moon consumption tests (2026-10-29)
+
+The black-hole preview now selects UFO, Earth or Moon. Switching targets resets the test and loads only the selected model. Earth and Moon reuse all original map/survey hex tiles, normals, relief, color and overlap ratios, at preview radii 1.55 / 1.1. Their clouds, lunar pad/flag and other main-scene gameplay stay outside this isolated test. Assets load under Suspense with the existing preview error boundary.
+
+Each surface remains one instanced draw plus one sealed backing sphere. Shared consumption logic replaces the instance transform in Three's position, world-position and normal shader chunks; static instance matrices/colors are never rewritten while playing or resetting. Tiles reach the same 6.3-unit capture zone, then peel and spiral inward with the UFO timing. The backing recedes between first and last detachment to avoid leaving an intact ball behind; reset restores it. These tests do not change the Earth/Moon models or destruction behavior in the main scene. The selected target remains excluded from the warm disc atlas.
+
+Regression coverage in scripts/test-black-hole-planets.mjs checks every tile's capture-sphere intersection, original linearized surface colors, shader transform use for positions/normals, backing reset, unchanged GPU buffer versions and disposal. Live browser appearance/FPS still requires user review under the saved browser restriction.
+
+
+Planet consumption stream refinement: detached Earth/Moon tiles no longer preserve a uniformly rotating shell. Each instance has three deterministic seed values prepared once. On detachment, seeded speed (1.0-1.7x), independent tumbling and an immediate smooth size reduction separate neighboring pieces. Exponential inward pull and fast convergence toward the tilted disc plane gather them into a narrow curved stream, with bounded lateral scatter. Every path begins exactly at the released tile center and ends inside radius 1.65 within the existing 3.4-second maximum; reset reuses seeds and buffers. UFO behavior stays as approved. Added tests for detachment continuity, immediate speed spread, inward travel and convergence from different latitudes. Browser appearance remains a user review item.
