@@ -30,7 +30,7 @@ export function ProceduralStarfield(){
   <points frustumCulled={false}>
    <primitive object={geometry} attach="geometry"/>
    <shaderMaterial ref={materialRef} uniforms={uniforms} depthWrite={false} toneMapped={false}
-    vertexShader={`attribute float starSize;attribute vec3 starColor;uniform float pixelHeight;varying vec3 vStarColor;void main(){vStarColor=starColor;vec4 mv=modelViewMatrix*vec4(position,1.0);gl_Position=projectionMatrix*mv;gl_PointSize=mv.z<0.0?clamp(starSize*pixelHeight*0.5*projectionMatrix[1][1]/max(1.0,-mv.z),1.0,3.5):0.0;}`}
+    vertexShader={`attribute float starSize;attribute vec3 starColor;uniform float pixelHeight;varying vec3 vStarColor;void main(){vStarColor=min(starColor*1.2,vec3(1.0));vec4 mv=modelViewMatrix*vec4(position,1.0);gl_Position=projectionMatrix*mv;gl_PointSize=mv.z<0.0?clamp(starSize*pixelHeight*0.5*projectionMatrix[1][1]/max(1.0,-mv.z),1.25,4.5):0.0;}`}
     fragmentShader={`varying vec3 vStarColor;void main(){gl_FragColor=vec4(vStarColor,1.0);}`}/>
   </points>
   <instancedMesh ref={accents} args={[undefined,undefined,data.accents.length]}>

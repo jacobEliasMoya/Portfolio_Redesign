@@ -7,13 +7,18 @@ import {UFO_WEAPON_MUZZLE} from "./alien-cannon.mjs";
 import { firstProjectileHit, getProjectileTarget } from "./projectile-collision.mjs";
 import {createWeaponCharge,isFullCharge,plasmaPulse} from "./weapon-charge.mjs";
 import {advanceBolts,BOLT_LIFETIME,createBoltPool,launchBolt} from "./projectile-pool.mjs";
+import {createDeathRay,deathRayActive,cancelDeathRay,stepDeathRay} from "./death-ray.mjs";
+import {createDeathRayModel,updateDeathRayModel} from "./death-ray-model.mjs";
 import {collectProjectileGravity} from "./projectile-gravity.mjs";
-export function SaucerProjectiles({ship,shotsRef,charge,reducedMotion,flight,active,visible,scale,muzzle=UFO_WEAPON_MUZZLE}:{ship:RefObject<Group|null>;shotsRef:RefObject<number[]>;charge:RefObject<ReturnType<typeof createWeaponCharge>>;reducedMotion:boolean;flight:RefObject<{velocity:Vector3}>;active:boolean;visible:boolean;scale:number;muzzle?:readonly number[]}){
+import type {WeaponShot,createWeaponSelection} from "./weapon-selection.mjs";
+export function SaucerProjectiles({ship,shotsRef,charge,weapons,reducedMotion,flight,active,visible,scale,muzzle=UFO_WEAPON_MUZZLE}:{ship:RefObject<Group|null>;shotsRef:RefObject<WeaponShot[]>;charge:RefObject<ReturnType<typeof createWeaponCharge>>;weapons:RefObject<ReturnType<typeof createWeaponSelection>>;reducedMotion:boolean;flight:RefObject<{velocity:Vector3}>;active:boolean;visible:boolean;scale:number;muzzle?:readonly number[]}){
  const plasmaShell=useRef<InstancedMesh>(null),plasmaGeometry=useMemo(()=>{const geometry=createBlasterEnvelope();geometry.setAttribute("shotPower",new InstancedBufferAttribute(new Float32Array(24),1).setUsage(DynamicDrawUsage));return geometry;},[]),plasmaMaterial=useMemo(()=>createBlasterMaterial(),[]);
  const chargeMaterial=useMemo(()=>createPlasmaMaterial({instanced:false}),[]);
  useEffect(()=>()=>chargeMaterial.dispose(),[chargeMaterial]);
  useEffect(()=>()=>{plasmaGeometry.dispose();plasmaMaterial.dispose();},[plasmaGeometry,plasmaMaterial]);
  const pool=useRef(createBoltPool()),chargeGlow=useRef<Mesh>(null);
+ const ray=useRef(createDeathRay()),rayModel=useMemo(()=>createDeathRayModel(),[]);
+ useEffect(()=>()=>rayModel.dispose(),[rayModel]);
  const collisionTargets=useRef<ReturnType<typeof import("./projectile-collision.mjs").createDestructible>[]>([]);
  const gravitySources=useRef<ReturnType<typeof collectProjectileGravity>>([]),collisionTime=useRef(0);
  const collideSegment=useCallback((bolt:ReturnType<typeof createBoltPool>[number])=>{
@@ -26,19 +31,22 @@ export function SaucerProjectiles({ship,shotsRef,charge,reducedMotion,flight,act
  useFrame((scene,delta)=>{
   const dt=Math.min(delta,.1),bolts=pool.current;
   if(chargeGlow.current)(chargeGlow.current.material as ShaderMaterial).uniforms.uTime.value=reducedMotion?0:scene.clock.elapsedTime;
-  if(!active||!visible){for(const bolt of bolts)bolt.age=BOLT_LIFETIME;shotsRef.current=[];}
+  if(!active||!visible){for(const bolt of bolts)bolt.age=BOLT_LIFETIME;shotsRef.current=[];cancelDeathRay(ray.current);}
+  if(!ship.current?.visible){shotsRef.current=[];cancelDeathRay(ray.current);}
+  const holdingRay=active&&visible&&!!ship.current?.visible&&weapons.current.rayHeld;
   const charging=active&&visible&&charge.current.active&&!!ship.current?.visible;
   if(chargeGlow.current)chargeGlow.current.visible=charging;
-  if(!charging&&!shotsRef.current.length&&!bolts.some(b=>b.age<BOLT_LIFETIME)){
+  if(!charging&&!shotsRef.current.length&&!bolts.some(b=>b.age<BOLT_LIFETIME)&&!deathRayActive(ray.current)&&!holdingRay){
+   updateDeathRayModel(rayModel,ray.current,scale,reducedMotion);
    for(const mesh of [core.current,glow.current,trail.current,plasmaShell.current])if(mesh)mesh.visible=false;
    collisionTargets.current.length=0;gravitySources.current.length=0;return;
   }
   const targets=collisionTargets.current;targets.length=0;
   gravitySources.current.length=0;collisionTime.current=scene.clock.elapsedTime;
-  if(bolts.some(b=>b.age<BOLT_LIFETIME&&!b.impact)){
+  if(bolts.some(b=>b.age<BOLT_LIFETIME&&!b.impact)||holdingRay||shotsRef.current.length){
    scene.scene.traverse(object=>{const target=getProjectileTarget(object);if(target)targets.push(target);});
-   collectProjectileGravity(scene.scene,gravitySources.current);
   }
+  if(bolts.some(b=>b.age<BOLT_LIFETIME&&!b.impact)||shotsRef.current.length)collectProjectileGravity(scene.scene,gravitySources.current);
   advanceBolts(bolts,dt,gravitySources.current,collideSegment);
   if(chargeGlow.current){
    chargeGlow.current.visible=charging;
@@ -47,7 +55,7 @@ export function SaucerProjectiles({ship,shotsRef,charge,reducedMotion,flight,act
     scratch.origin.set(muzzle[0]*scale,muzzle[1]*scale,(muzzle[2]+.16)*scale);ship.current.localToWorld(scratch.origin);
     chargeGlow.current.position.copy(scratch.origin);ship.current.getWorldQuaternion(chargeGlow.current.quaternion);
     const level=charge.current.level(performance.now());
-    // Keep the original compact charge orb, with a constant plasma-blue color.
+    // Only bolts charge; their original compact blue charge orb is unchanged.
     chargeGlow.current.scale.setScalar(scale*(.18+level*.7)*(isFullCharge(level)?plasmaPulse(scene.clock.elapsedTime,reducedMotion):1));
    }
   }
@@ -56,8 +64,13 @@ export function SaucerProjectiles({ship,shotsRef,charge,reducedMotion,flight,act
    scratch.origin.set(muzzle[0]*scale,muzzle[1]*scale,muzzle[2]*scale);ship.current.localToWorld(scratch.origin);
    ship.current.getWorldQuaternion(scratch.rotation);
    const requested=shotsRef.current;shotsRef.current=[];
-   for(const power of requested)launchBolt(bolts,scratch.origin,scratch.rotation,flight.current.velocity,power);
+   for(const shot of requested)if(shot.weapon==="bolts")launchBolt(bolts,scratch.origin,scratch.rotation,flight.current.velocity,shot.power);
   }
+  if((deathRayActive(ray.current)||holdingRay)&&ship.current){
+   ship.current.updateWorldMatrix(true,false);scratch.origin.set(muzzle[0]*scale,muzzle[1]*scale,muzzle[2]*scale);ship.current.localToWorld(scratch.origin);ship.current.getWorldQuaternion(scratch.rotation);
+   stepDeathRay(ray.current,dt,scratch.origin,scratch.rotation,targets,collisionTime.current,holdingRay);
+  }
+  updateDeathRayModel(rayModel,ray.current,scale,reducedMotion);
   let alive=false;
   for(let i=0;i<bolts.length;i++){
    const b=bolts[i],life=b.age<BOLT_LIFETIME?Math.min(1,(BOLT_LIFETIME-b.age)/.25):0;
@@ -79,9 +92,10 @@ export function SaucerProjectiles({ship,shotsRef,charge,reducedMotion,flight,act
   }
   plasmaGeometry.getAttribute("shotPower").needsUpdate=true;
   for(const mesh of [core.current,glow.current,trail.current,plasmaShell.current])if(mesh){mesh.visible=alive;mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;}
-  if(alive||charging||(active&&shotsRef.current.length>0))scene.invalidate();
+  if(alive||charging||deathRayActive(ray.current)||(active&&shotsRef.current.length>0))scene.invalidate();
  });
  return <group>
+  <primitive object={rayModel.root} dispose={null}/>
   <instancedMesh ref={plasmaShell} args={[plasmaGeometry,plasmaMaterial,24]} frustumCulled={false}/>
   <mesh ref={chargeGlow} visible={false} material={chargeMaterial}><icosahedronGeometry args={[1,2]}/></mesh>
   <instancedMesh ref={core} args={[undefined,undefined,24]} frustumCulled={false}><sphereGeometry args={[1,8,6]}/><meshBasicMaterial color="#ffffff" toneMapped={false}/></instancedMesh>

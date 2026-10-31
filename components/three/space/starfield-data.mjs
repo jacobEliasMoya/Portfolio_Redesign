@@ -9,7 +9,7 @@ export function buildStarfield(seed=4729){
   return {position:[Math.cos(angle)*ring*radius,y*radius+.35,Math.sin(angle)*ring*radius-9],size:size*(.65+random()*.7),color};
  }
  for(let i=0;i<1400;i++)points.push(star(140,280,.18));
- for(let i=0;i<180;i++)points.push(star(55,110,.08));
- for(let i=0;i<28;i++)accents.push(star(110,210,.14));
+ for(let i=0;i<360;i++)points.push(star(55,110,.16));
+ for(let i=0;i<48;i++)accents.push(star(75,150,.20));
  return {points,accents};
 }

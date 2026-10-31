@@ -58,3 +58,8 @@ Planet destruction threshold: Earth explodes after 20 projectile impacts, Moon a
 Planet threshold buildup: extend charge to 1.2 seconds, with a hot red core visible through widening tile gaps and a soft red Fresnel halo. Tiles lift radially 6% and narrow tangentially 42% during charge; retain most original colors instead of repainting the whole surface yellow. Core and halo fade over the first 0.65 seconds of the burst; tile transforms stay continuous into breakup. Shared PlanetCore applies to Earth and Moon, adds two transient draws per charging planet, no bloom library or per-tile lights. Reduced motion omits the buildup/burst.
 
 Red-circle correction: user rejected the visible core sphere and its lingering glow shell. Remove PlanetCore entirely. Put the red heartbeat directly into Earth and Moon tile emission using the shared impact shader; negative impactHeat marks red buildup, positive values retain existing hot-scar colors. Auxiliary glow ends immediately at breakup; no red sphere/ring survives among the debris. Preserve tile separation, thresholds and outward burst. Supersedes all core/halo geometry instructions.
+
+
+### Optional whole-body breakup (2026-10-30)
+
+BlockEarth accepts `explosionsEnabled`, defaulting to `false`. Opt in with `explosionsEnabled={true}` to restore the existing hit-threshold explosion. Craters, scorch/heat and local impact effects stay enabled. Changing the prop updates the existing impact target without clearing its damage. It gates future triggers and does not rewind an already-started breakup.

@@ -5,7 +5,7 @@ export function createSmokeRing(mark,surfaceRadius=3,kind="earth"){
  const normal=new Vector3(mark.x,mark.y,mark.z).normalize();
  const tangent=new Vector3().crossVectors(normal,Math.abs(normal.y)<.9?new Vector3(0,1,0):new Vector3(1,0,0)).normalize();
  const power=Math.max(0,Math.min(1,mark.power??0)),moon=kind==="moon";
- const life=moon?.85+power*.3:1.6+power*.5;
+ const life=moon?1.15+power*.35:1.6+power*.5;
  const impactSeed=mark.x*13.7+mark.y*29.3+mark.z*43.1;
  const particles=Array.from({length:SMOKE_PUFFS},(_,i)=>{
   const n=impactSeed+i*7.31;
@@ -26,7 +26,7 @@ export function smokePuff(ring,index,out,sample={scale:0,alpha:0}){
   lift=.04+(.30+ring.power*.30)*t+Math.sin(Math.PI*t)*.10*particle.speed;
  }else{
   spread=(.035+ring.blast*.12)+(ring.blast*(moon?1.4:1)+.22)*travel*particle.speed;
-  lift=.025+Math.sin(Math.PI*t)*(moon?.10+ring.power*.10:.09+ring.power*.11)*particle.speed;
+  lift=.025+Math.sin(Math.PI*t)*(moon?.14+ring.power*.14:.09+ring.power*.11)*particle.speed;
   if(!moon)lift+=t*.10;
  }
  const theta=spread/ring.radius;
@@ -34,8 +34,8 @@ export function smokePuff(ring,index,out,sample={scale:0,alpha:0}){
  out.addScaledVector(ring.tangent,Math.cos(particle.angle)*Math.sin(theta));
  out.addScaledVector(ring.bitangent,Math.sin(particle.angle)*Math.sin(theta));
  out.multiplyScalar(ring.radius+lift);
- const size=moon?.018+ring.power*.013+t*.025:.032+ring.power*.025+t*(particle.column?.12:.085);
+ const size=moon?.028+ring.power*.020+t*.040:.032+ring.power*.025+t*(particle.column?.12:.085);
  sample.scale=age<=0||t>=1?0:size*particle.size;
- sample.alpha=age<=0?0:Math.min(1,t/(moon?.055:.10))*Math.pow(1-t,moon?2.2:1.35)*(moon?.65:.58+ring.power*.18);
+ sample.alpha=age<=0?0:Math.min(1,t/(moon?.055:.10))*Math.pow(1-t,moon?2.2:1.35)*(moon?.78:.58+ring.power*.18);
  return sample;
 }

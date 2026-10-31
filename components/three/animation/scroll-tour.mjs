@@ -5,7 +5,7 @@ export const TOUR_STOPS=Object.freeze([
  {key:"overview",label:"Overview"},{key:"jake",label:"Jake"},{key:"space",label:"Space"},{key:"california",label:"California"},{key:"moon",label:"Moon"}
 ].map((stop,index,stops)=>Object.freeze({...stop,progress:index/(stops.length-1)})));
 export function stepTourStops(current,steps){let value=clampTour(current);for(let i=0;i<Math.min(TOUR_STOPS.length,Math.abs(steps));i++)value=steps>0?(TOUR_STOPS.find(stop=>stop.progress>value+.001)?.progress??1):([...TOUR_STOPS].reverse().find(stop=>stop.progress<value-.001)?.progress??0);return value;}
-export function createTourAnchors(){return {earthCenter:new Vector3(0,.35,-9),overview:new Vector3(0,.35,-9),earthRadius:6.5,moonRadius:6.5*.273,jake:new Vector3(-3,.35,1),space:new Vector3(4,.35,0),california:new Vector3(-4,4,-11),moon:new Vector3(23,5,-10)};}
+export function createTourAnchors(){return {earthCenter:new Vector3(0,.35,-9),overview:new Vector3(0,.35,-9),earthRadius:6.5,moonRadius:6.5*.273,jake:new Vector3(-3,.35,1),space:new Vector3(4,.35,0),california:new Vector3(-4,4,-11),moon:new Vector3(0,.35-(6.5*3.6+6.5*.273)*Math.sin(Math.PI/10),-9+(6.5*3.6+6.5*.273)*Math.cos(Math.PI/10))};}
 const ease=t=>t*t*t*(t*(t*6-15)+10);
 /** Ordered live text/place landmarks; spherical travel avoids cutting through Earth between views. */
 export function createScrollTour(){
@@ -15,7 +15,7 @@ export function createScrollTour(){
   for(let index=0;index<TOUR_STOPS.length;index++){
    const key=TOUR_STOPS[index].key,point=anchors[key];
    targets[index].copy(point);
-   if(key==="overview"){positions[index].set(0,0,22);continue;}
+   if(key==="overview"){direction.copy(anchors.moon).sub(center).normalize();positions[index].copy(anchors.moon).addScaledVector(direction,Math.max(9,anchors.moonRadius*5));positions[index].y+=anchors.moonRadius*2;continue;}
    direction.copy(point).sub(center).normalize();
    positions[index].copy(point).addScaledVector(direction,viewDistance);
    if(key==="moon")positions[index].y+=anchors.moonRadius*1.8;

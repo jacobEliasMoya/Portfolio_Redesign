@@ -14,13 +14,14 @@ import { easePulse, getPulseStrength } from "@/components/three/animation/letter
 import { smoothIntro } from "@/components/three/animation/loading-intro.mjs";
 import { titleDuration, titleWrapProgress, wrapFormation, wrapPoint } from "@/components/three/animation/wrapped-wordmark.mjs";
 
-type Volume = { text: string; positions: number[]; scales: number[]; fragments: number[]; letterIndices: number[]; letterCenters: number[]; letterRadii: number[]; cubeSize: number };
+type Volume = { text: string; positions: number[]; scales: number[]; fragments: number[]; letterIndices: number[]; letterCenters: number[]; letterRadii: number[]; cubeSize: number; layoutWidth?:number };
 export type IntroPhase = "loading" | "waiting" | "ready";
 function parseVolume(raw: unknown): Volume {
   if (typeof raw !== "string") throw new Error("Invalid wrapped text response");
   const data = JSON.parse(raw);
   const count = data.scales?.length;
   if (data.version !== 3 || data.text !== "Jakes Space" || !count || count > 15000 || !Array.isArray(data.positions) || data.positions.length !== count * 3 || !data.positions.every(Number.isFinite) || !data.scales.every((n: number) => Number.isFinite(n) && n > 0 && n <= 2) || !Array.isArray(data.letterCenters) || data.letterCenters.length !== data.text.length * 3 || !data.letterCenters.every(Number.isFinite) || !Array.isArray(data.letterRadii) || data.letterRadii.length !== data.text.length || !data.letterRadii.every((n: number) => Number.isFinite(n) && n > 0) || !Array.isArray(data.letterIndices) || data.letterIndices.length !== count || !data.letterIndices.every((n: number) => Number.isInteger(n) && n >= 0 && n < data.text.length) || !Array.isArray(data.fragments) || data.fragments.length !== count || !data.fragments.every((n: number) => n === 0 || n === 1) || !(data.cubeSize > 0 && data.cubeSize < 1)) throw new Error("Invalid wrapped text volume");
+  if(data.layoutWidth!==undefined&&(!Number.isFinite(data.layoutWidth)||data.layoutWidth<=0))throw new Error("Invalid text layout width");
   return data;
 }
 const noise = (i: number) => { const n = Math.sin(i * 127.1 + 311.7) * 43758.5453; return n - Math.floor(n); };
@@ -35,7 +36,7 @@ export function ParticleWordmark({ shipPositionRef, piloting, reducedMotion, rep
     const earthRadius=Math.min(6.5,size.width/Math.max(1,size.height)*9.4);
     const radius=earthRadius*1.5+.8;
     const xs = data.positions.filter((_, i) => i % 3 === 0);
-    const scale = (earthRadius*1.2+.6) * 2.1 / (Math.max(...xs) - Math.min(...xs));
+    const scale = (earthRadius*1.2+.6) * 2.1 / (data.layoutWidth??(Math.max(...xs) - Math.min(...xs)));
     const letters = [...data.text].flatMap((c, i) => c === " " ? [] : [i]);
     const ordinal = [...data.text].map((_, i) => data.text.slice(0, i).replace(/\s/g, "").length);
     const targets = data.scales.map((_, i) => wrapPoint(...data.positions.slice(i * 3, i * 3 + 3) as [number, number, number], scale, radius));

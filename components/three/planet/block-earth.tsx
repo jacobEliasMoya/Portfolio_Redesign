@@ -7,7 +7,7 @@ import { useDestructibleInstances } from "@/hooks/use-destructible-instances";
 
 import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useFrame, useLoader, useThree } from "@react-three/fiber";
-import { Color, InstancedBufferAttribute, DynamicDrawUsage, FileLoader, Group, InstancedMesh, MathUtils, Object3D, Quaternion, SRGBColorSpace, Vector3 } from "three";
+import { type BufferGeometry, Color, InstancedBufferAttribute, DynamicDrawUsage, FileLoader, Group, InstancedMesh, MathUtils, Object3D, Quaternion, SRGBColorSpace, Vector3 } from "three";
 import { applyEarthDrag, EARTH_AXIAL_TILT, EARTH_IDLE_SPEED } from "./earth-rotation.mjs";
 import { easePulse } from "@/components/three/animation/letter-pulse.mjs";
 import { getOceanRipple } from "./ocean-ripple.mjs";
@@ -40,10 +40,11 @@ export type BlockEarthProps = {
   onRevealed?: () => void;
   gravity?:boolean;
   gravityPower?:number;
+  explosionsEnabled?:boolean;
 };
 
 /** Real, beveled hexagonal prism instances; map-derived continents and raised relief on all six sides. */
-export function BlockEarth({ children, radius = 3, position = [0, 0, 0], rotation = [0, Math.PI / 2, 0], revealed = true, reducedMotion = false, autoRotate = false, axialTilt = true, draggable = false, onRevealed,gravity=true,gravityPower=1 }: BlockEarthProps) {
+export function BlockEarth({ children, radius = 3, position = [0, 0, 0], rotation = [0, Math.PI / 2, 0], revealed = true, reducedMotion = false, autoRotate = false, axialTilt = true, draggable = false, onRevealed,gravity=true,gravityPower=1,explosionsEnabled=false }: BlockEarthProps) {
   const raw = useLoader(FileLoader, "/models/earth/block-earth.json?revision=ocean-ripple-1");
   const data = useMemo(() => parseEarth(raw), [raw]);
   const ocean = useMemo(() => {
@@ -55,7 +56,8 @@ export function BlockEarth({ children, radius = 3, position = [0, 0, 0], rotatio
   const waveStrength = useRef(new Float32Array(data.sizes.length));
   const wavesMoved = useRef(false);
   const mesh = useRef<InstancedMesh>(null);
-  const scorched=useDestructibleInstances(mesh,{foundation:2.94,blast:.3,padding:.065,mode:"dent",threshold:PLANET_HITS.earth});
+  const craterSurfaces=useRef<Array<BufferGeometry|null>>([]);
+  const scorched=useDestructibleInstances(mesh,{foundation:2.94,blast:.3,padding:.025,mode:"crater",threshold:PLANET_HITS.earth,explosionsEnabled,craterSurfaces});
   const revealGroup = useRef<Group>(null),interior=useRef<Group>(null),clouds=useRef<Group>(null);
   const spin = useRef<Group>(null);
   const control = useRef<Group>(null);
@@ -144,7 +146,7 @@ export function BlockEarth({ children, radius = 3, position = [0, 0, 0], rotatio
       <group ref={spin}>
         {/* Opaque foundation prevents background pinholes at patch seams and moving ocean crests. */}
         <group ref={interior}><mesh>
-          <sphereGeometry args={[data.radius * 0.98, 64, 40]} />
+          <sphereGeometry ref={geometry=>{craterSurfaces.current[0]=geometry;}} args={[data.radius * 0.98, 64, 40]} />
           <meshStandardMaterial color="#073775" roughness={0.75} metalness={0.03} />
         </mesh></group>
         <object3D name="tour-california" position={[-2.175,1.946,-1.231]}/>

@@ -1,10 +1,11 @@
 "use client";
 import {useObjectDrag} from "@/hooks/use-object-drag";
 import {applyEarthDrag} from "../planet/earth-rotation.mjs";
+import {ImpactSmoke} from "../planet/impact-smoke";
+import {scorchLunarSkin} from "./lunar-impact.mjs";
 import { LunarFlag } from "./lunar-flag";
 import { LunarLandingPad } from "./lunar-landing-pad";
-import { ImpactSmoke } from "../planet/impact-smoke";
-import { scorchLunarSkin } from "./lunar-impact.mjs";
+import {createLunarFacetGeometry,applyLunarFacets} from "./lunar-facet-geometry.mjs";
 import { applyImpactGlow } from "@/components/three/planet/impact-material.mjs";
 import { PLANET_HITS } from "@/components/three/planet/planet-explosion.mjs";
 import { getProjectileTarget } from "@/components/three/ufo/projectile-collision.mjs";
@@ -15,30 +16,32 @@ import { BufferGeometry, Color, DoubleSide, DynamicDrawUsage, FileLoader, Float3
 import { createHexagonalEarthGeometry } from "@/components/three/planet/hexagonal-earth-geometry.mjs";
 import { getMoonOrbitPose, MOON_ORBIT, releaseMoon, advanceFreeMoon } from "./moon-orbit.mjs";
 
-type LunarVolume = { version: number; radius: number; positions: number[]; normals: number[]; sizes: number[]; colors: number[]; skin: { positions: number[]; colors: number[]; indices: number[] } };
+type LunarVolume = { version: number; facetCorners?:number[];facetCornerCounts?:number[]; foundation?:number;tileTangentScale?:number;tileDepthScale?:number; radius: number; positions: number[]; normals: number[]; sizes: number[]; colors: number[]; skin: { positions: number[]; colors: number[]; indices: number[] } };
 function parseMoon(raw: unknown): LunarVolume {
   if (typeof raw !== "string") throw new Error("Invalid lunar data response");
   const data = JSON.parse(raw) as LunarVolume;
   const count = data.sizes?.length;
-  if (data.version !== 2 || data.radius !== .82 || !count || count > 60000 ||
+  if ((data.version !== 2 && data.version !== 3) || data.radius !== .82 || !count || count > 60000 ||
     ![data.positions,data.normals,data.colors].every((values)=>Array.isArray(values)&&values.length===count*3&&values.every(Number.isFinite)) ||
     !data.sizes.every((n)=>Number.isFinite(n)&&n>0&&n<.3) || !data.colors.every((n)=>n>=0&&n<=1)) throw new Error("Invalid lunar geometry data");
+  if(data.version===3&&(!Array.isArray(data.facetCorners)||data.facetCorners.length!==count*18||!data.facetCorners.every(Number.isFinite)||!Array.isArray(data.facetCornerCounts)||data.facetCornerCounts.length!==count||!data.facetCornerCounts.every(n=>n===5||n===6)||!Number.isFinite(data.foundation)||!(Number(data.foundation)>0)||!Number.isFinite(data.tileTangentScale)||!(Number(data.tileTangentScale)>0)||!Number.isFinite(data.tileDepthScale)||!(Number(data.tileDepthScale)>0)))throw new Error("Invalid fitted lunar facets");
   const skin=data.skin;
   if(!skin || !Array.isArray(skin.positions) || skin.positions.length%3 || skin.positions.length>150000 || !skin.positions.every(Number.isFinite) || !Array.isArray(skin.colors) || skin.colors.length!==skin.positions.length || !skin.colors.every((n)=>Number.isFinite(n)&&n>=0&&n<=1) || !Array.isArray(skin.indices) || skin.indices.length%3 || skin.indices.length>400000 || !skin.indices.every((n)=>Number.isInteger(n)&&n>=0&&n<skin.positions.length/3)) throw new Error("Invalid lunar survey skin");
   return data;
 }
 /** Reusable survey-derived solid lunar surface; local +Z is the near-side face. */
-export function BlockMoon({ radius = .82, rotation = [0,0,0], reducedMotion=false,draggable=false,gravity=true,gravityPower=1 }: { radius?: number; rotation?: [number,number,number]; reducedMotion?:boolean;draggable?:boolean;gravity?:boolean;gravityPower?:number }) {
-  const raw = useLoader(FileLoader,"/models/moon/block-moon.json?revision=solid-chunky-3");
+export function BlockMoon({ radius = .82, rotation = [0,0,0], reducedMotion=false,draggable=false,gravity=true,gravityPower=1,explosionsEnabled=false }: { radius?: number; rotation?: [number,number,number]; reducedMotion?:boolean;draggable?:boolean;gravity?:boolean;gravityPower?:number;explosionsEnabled?:boolean }) {
+  const raw = useLoader(FileLoader,"/models/moon/block-moon.json?revision=sculpted-craters-1");
   const data = useMemo(()=>parseMoon(raw),[raw]);
   const mesh = useRef<InstancedMesh>(null),interior=useRef<Group>(null),processedMarks=useRef(0);
+  const craterSurfaces=useRef<Array<BufferGeometry|null>>([]);
   const control=useRef<Group>(null),orientation=useRef(new Quaternion()),dragSpace=useMemo(()=>new Quaternion(),[]);
   useObjectDrag({object:mesh,radius:.94,enabled:draggable,
     available:()=>!mesh.current||((getProjectileTarget(mesh.current)?.planetPhase()??"intact")==="intact"),
     onMove:({dx,dy,camera})=>{if(!control.current?.parent)return;control.current.parent.getWorldQuaternion(dragSpace);dragSpace.invert().multiply(camera.quaternion);applyEarthDrag(orientation.current,dx,dy,dragSpace);}
   });
-  useDestructibleInstances(mesh,{foundation:.70,blast:.10,padding:.012,mode:"explode",threshold:PLANET_HITS.moon});
-  const geometry = useMemo(()=>{const tile=createHexagonalEarthGeometry();tile.setAttribute("impactHeat",new InstancedBufferAttribute(new Float32Array(data.sizes.length),1));return tile;},[data.sizes.length]);
+  useDestructibleInstances(mesh,{foundation:data.foundation??.70,blast:.14,padding:.012,mode:"crater",threshold:PLANET_HITS.moon,explosionsEnabled,craterSurfaces});
+  const geometry = useMemo(()=>{const tile=data.facetCorners?createLunarFacetGeometry(data):createHexagonalEarthGeometry();tile.setAttribute("impactHeat",new InstancedBufferAttribute(new Float32Array(data.sizes.length),1));return tile;},[data]);
   useEffect(()=>()=>geometry.dispose(),[geometry]);
   const skin=useMemo(()=>{
     const surface=new BufferGeometry(), color=new Color();
@@ -49,7 +52,7 @@ export function BlockMoon({ radius = .82, rotation = [0,0,0], reducedMotion=fals
     surface.setIndex(data.skin.indices);surface.computeVertexNormals();surface.computeBoundingSphere();
     return surface;
   },[data]);
-  useEffect(()=>()=>skin.dispose(),[skin]);
+  useEffect(()=>{const surfaces=craterSurfaces.current;surfaces[1]=skin;return()=>{surfaces[1]=null;skin.dispose();};},[skin]);
   useEffect(()=>{
     if (!mesh.current) return;
     mesh.current.instanceMatrix.setUsage(DynamicDrawUsage);
@@ -57,7 +60,7 @@ export function BlockMoon({ radius = .82, rotation = [0,0,0], reducedMotion=fals
     for(let i=0;i<data.sizes.length;i++) {
       transform.position.fromArray(data.positions,i*3);
       transform.quaternion.setFromUnitVectors(up,normal.fromArray(data.normals,i*3).normalize());
-      transform.scale.set(data.sizes[i]*1.65,data.sizes[i]*1.15,data.sizes[i]*1.65);
+      transform.scale.set(data.sizes[i]*(data.tileTangentScale??1.65),data.sizes[i]*(data.tileDepthScale??1.15),data.sizes[i]*(data.tileTangentScale??1.65));
       transform.updateMatrix();mesh.current.setMatrixAt(i,transform.matrix);
       color.setRGB(data.colors[i*3],data.colors[i*3+1],data.colors[i*3+2],SRGBColorSpace);mesh.current.setColorAt(i,color);
     }
@@ -76,10 +79,10 @@ export function BlockMoon({ radius = .82, rotation = [0,0,0], reducedMotion=fals
     if(phase==="charging"||phase==="exploding")state.invalidate();
   },-1.5);
   return <group scale={radius/data.radius} rotation={rotation}><group ref={control}>
-    <group ref={interior}><mesh><sphereGeometry args={[.70,48,32]} /><meshStandardMaterial color="#85838a" roughness={.95} side={DoubleSide} transparent={false} /></mesh>
+    <group ref={interior}><mesh><sphereGeometry ref={geometry=>{craterSurfaces.current[0]=geometry;}} args={[data.foundation??.70,48,32]} /><meshStandardMaterial color="#85838a" roughness={.95} side={DoubleSide} transparent={false} /></mesh>
     <mesh><primitive object={skin} attach="geometry"/><meshStandardMaterial vertexColors roughness={.94} metalness={0} side={DoubleSide} transparent={false}/></mesh>
     </group><instancedMesh name="tour-moon" userData={{projectileGravity:{enabled:gravity,power:gravityPower,radius:data.radius,kind:"moon"}}} ref={mesh} args={[undefined,undefined,data.sizes.length]} frustumCulled={false}>
-      <primitive object={geometry} attach="geometry" /><meshStandardMaterial roughness={.88} metalness={.02} transparent={false} onBeforeCompile={applyImpactGlow} customProgramCacheKey={()=>"moon-impact-glow-v3"} />
+      <primitive object={geometry} attach="geometry" /><meshStandardMaterial roughness={.88} metalness={.02} transparent={false} onBeforeCompile={data.facetCorners?applyLunarFacets:applyImpactGlow} customProgramCacheKey={()=>data.facetCorners?"moon-fitted-facets-v1":"moon-impact-glow-v3"} />
     </instancedMesh>
     <LunarLandingPad moon={mesh}/>
     <LunarFlag moon={mesh} reducedMotion={reducedMotion}/>
@@ -88,8 +91,8 @@ export function BlockMoon({ radius = .82, rotation = [0,0,0], reducedMotion=fals
 }
 
 /** The same orbital phase drives position and yaw: exactly one spin per revolution. */
-export function OrbitingMoon({ earthRadius, enabled, reducedMotion, draggable=false, center = [0,.35,-9],gravity=true,gravityPower=1 }: {
-  earthRadius: number; enabled: boolean; reducedMotion: boolean; draggable?:boolean; center?: [number,number,number];gravity?:boolean;gravityPower?:number;
+export function OrbitingMoon({ earthRadius, enabled, reducedMotion, draggable=false, center = [0,.35,-9],gravity=true,gravityPower=1,explosionsEnabled=false }: {
+  earthRadius: number; enabled: boolean; reducedMotion: boolean; draggable?:boolean; center?: [number,number,number];gravity?:boolean;gravityPower?:number;explosionsEnabled?:boolean;
 }) {
   const group = useRef<Group>(null), reveal = useRef<Group>(null), elapsed = useRef(0), amount = useRef(0);
   const released=useRef<ReturnType<typeof releaseMoon>|null>(null);
@@ -116,7 +119,7 @@ export function OrbitingMoon({ earthRadius, enabled, reducedMotion, draggable=fa
   },-2);
   return <group position={center} rotation={[MOON_ORBIT.inclination,0,MOON_ORBIT.node]}>
     <group ref={group} position={initial.position as [number,number,number]} rotation={[0,initial.yaw,0]}>
-      <group ref={reveal} scale={0}><BlockMoon radius={moonRadius} reducedMotion={reducedMotion} draggable={draggable&&enabled} gravity={gravity} gravityPower={gravityPower}/></group>
+      <group ref={reveal} scale={0}><BlockMoon radius={moonRadius} reducedMotion={reducedMotion} draggable={draggable&&enabled} gravity={gravity} gravityPower={gravityPower} explosionsEnabled={explosionsEnabled}/></group>
     </group>
   </group>;
 }

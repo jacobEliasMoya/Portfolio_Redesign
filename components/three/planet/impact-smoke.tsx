@@ -21,7 +21,7 @@ export function ImpactSmoke({earth,reducedMotion,surfaceRadius=3,kind="earth"}:{
    active ||=live;
    for(let i=0;i<SMOKE_PUFFS;i++){
     const id=s*SMOKE_PUFFS+i;
-    if(live&&ring){const puff=smokePuff(ring,i,position,scratch.current.puff);transform.position.copy(position);transform.rotation.set(i*.71+ring.age*(ring.kind==="moon"?1.2:.18),i*1.37,i*.42);transform.scale.setScalar(puff.scale);alpha.setX(id,puff.alpha);const shade=(ring.kind==="moon"?.32:.18)+(i%7)*.018;color.setRGB(shade,shade*(ring.kind==="moon"?1:.96),shade*(ring.kind==="moon"?1:.92));mesh.current.setColorAt(id,color);}
+    if(live&&ring){const puff=smokePuff(ring,i,position,scratch.current.puff);transform.position.copy(position);transform.rotation.set(i*.71+ring.age*(ring.kind==="moon"?1.2:.18),i*1.37,i*.42);transform.scale.setScalar(puff.scale);alpha.setX(id,puff.alpha);const shade=(ring.kind==="moon"?.40:.18)+(i%7)*.018;color.setRGB(shade,shade*(ring.kind==="moon"?1:.96),shade*(ring.kind==="moon"?1:.92));mesh.current.setColorAt(id,color);}
     else {transform.scale.setScalar(0);alpha.setX(id,0);}
     transform.updateMatrix();mesh.current.setMatrixAt(id,transform.matrix);
    }

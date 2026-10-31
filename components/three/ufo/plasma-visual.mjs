@@ -5,11 +5,11 @@ export function createBlasterEnvelope(){
  const geometry=new LatheGeometry([[0,-1.2],[.025,-1.05],[.065,-.8],[.105,-.45],[.11,.55],[.10,.67],[.075,.76],[.04,.81],[0,.83]].map(p=>new Vector2(...p)),12);
  geometry.rotateX(Math.PI/2);return geometry;
 }
-export function createBlasterMaterial(){return new ShaderMaterial({
+export function createBlasterMaterial({instanced=true}={}){return new ShaderMaterial({
  transparent:true,depthWrite:false,blending:AdditiveBlending,toneMapped:false,
  vertexShader:`attribute float shotPower;varying float vPower;varying vec3 vLocal;varying vec3 vNormal;varying vec3 vView;
- void main(){vPower=shotPower;vLocal=position;vec4 view=modelViewMatrix*instanceMatrix*vec4(position,1.);
- vNormal=normalize(normalMatrix*mat3(instanceMatrix)*normal);vView=-view.xyz;gl_Position=projectionMatrix*view;}`,
+ void main(){vPower=shotPower;vLocal=position;vec4 view=modelViewMatrix*${instanced?"instanceMatrix*":""}vec4(position,1.);
+ vNormal=normalize(normalMatrix*${instanced?"mat3(instanceMatrix)*":""}normal);vView=-view.xyz;gl_Position=projectionMatrix*view;}`,
  fragmentShader:`varying float vPower;varying vec3 vLocal;varying vec3 vNormal;varying vec3 vView;
  void main(){
  float edge=pow(1.-abs(dot(normalize(vNormal),normalize(vView))),2.);

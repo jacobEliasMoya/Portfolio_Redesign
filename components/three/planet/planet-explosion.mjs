@@ -7,14 +7,14 @@ export function planetChargeGlow(seconds){
  return t/PLANET_EXPLOSION_TIMING.charge*(.7+.3*Math.cos(2*Math.PI*t/.6));
 }
 /** Reuse the planet's original instance buffer for one bounded outward burst. */
-export function createPlanetExplosion(mesh,threshold=0,{seed=Math.floor(Math.random()*4294967296),excluded=null,neutralBurst=false}={}){
+export function createPlanetExplosion(mesh,threshold=0,{seed=Math.floor(Math.random()*4294967296),excluded=null,neutralBurst=false,enabled=true}={}){
  let hits=0,phase="intact",age=0,rest=null,colors=null,velocities=null,spins=null,delays=null;
  const quaternion=new Quaternion(),axis=new Vector3();
  let randomState=seed>>>0;
  const random=()=>{randomState=(Math.imul(randomState,1664525)+1013904223)>>>0;return randomState/4294967296;};
  const chargeTime=PLANET_EXPLOSION_TIMING.charge,total=chargeTime+PLANET_EXPLOSION_TIMING.burst;
- return {phase:()=>phase,glow:()=>phase==="charging"?planetChargeGlow(age):0,hits:()=>hits,recordHit(){
-  if(!threshold||phase!=="intact")return;
+ return {setEnabled(value){enabled=!!value;},phase:()=>phase,glow:()=>phase==="charging"?planetChargeGlow(age):0,hits:()=>hits,recordHit(){
+  if(!enabled||!threshold||phase!=="intact")return;
   hits++;if(hits<threshold)return;
   phase="charging";age=0;rest=mesh.instanceMatrix.array.slice();colors=mesh.instanceColor?.array.slice()??null;
   velocities=new Float32Array(mesh.count*3);spins=new Float32Array(mesh.count*4);delays=new Float32Array(mesh.count);

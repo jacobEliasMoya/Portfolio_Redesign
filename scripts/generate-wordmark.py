@@ -61,6 +61,7 @@ parser.add_argument("--spacing", type=float, default=0.19)
 parser.add_argument("--cube-size", type=float, default=0.18)
 parser.add_argument("--layers", type=int, default=4)
 parser.add_argument("--match-text", help="Use the font scale of this reference text at 8.2 units wide")
+parser.add_argument("--no-fragments", action="store_true", help="Remove decorative edge debris while preserving core samples and framing")
 args = parser.parse_args()
 
 font = TTFont("app/fonts/Sabo-Filled.otf")
@@ -142,6 +143,13 @@ for index, letter_index in enumerate(letter_indices):
     letter_radii[letter_index] = max(letter_radii[letter_index], radius)
 result = {"version": 3, "text": args.text, "source": "Sabo Filled — Philippe Moesch", "style": "particle-core", "cubeSize": args.cube_size, "positions": positions, "scales": scales, "fragments": fragments, "letterIndices": letter_indices, "letterCenters": letter_centers, "letterRadii": [round(r, 4) if r > 0 else 1 for r in letter_radii]}
 target = Path(args.output)
+if args.no_fragments:
+    # Filter after sampling so RNG consumption, core cubes and pulse timing stay identical.
+    result["layoutWidth"] = round(max(positions[::3]) - min(positions[::3]), 4)
+    keep = [index for index, fragment in enumerate(fragments) if not fragment]
+    result["positions"] = [value for index in keep for value in positions[index*3:index*3+3]]
+    for key in ("scales", "fragments", "letterIndices"):
+        result[key] = [result[key][index] for index in keep]
 target.parent.mkdir(parents=True, exist_ok=True)
 target.write_text(json.dumps(result, separators=(",", ":")), encoding="utf-8")
-print(f"Generated {len(positions)//3} cubes ({sum(fragments)} loose fragments) in {target}")
+print(f"Generated {len(result['scales'])} cubes ({sum(result['fragments'])} loose fragments) in {target}")

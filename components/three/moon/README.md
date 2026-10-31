@@ -1,3 +1,13 @@
+## Raised platform and pointer-responsive flag - 2026-10-30
+
+Pad height1.14 (previously.91), scale.8, three hex supports reaching the lunar foundation. Pad follows the Moon center but stays parallel to scene XZ, preserving projected heading. Pose updates after Moon transforms and before ship landing/launch sampling; zero-scale reveal is guarded. Flag hover adds bounded local fabric movement with shared cloth/stripe/letter deformation, damped entry/exit, blur cleanup and reduced-motion handling. See docs/current-scene.md for validation and browser limitations.
+
+## Irregular sculpted Moon, rendered HUD icons and direct Sabo — 2026-10-30
+
+Moon now follows the approved crater reference while retaining the chunky hex/voxel family. User explicitly rejected an overly tidy/smooth result: final layout has3242 fitted cells (3230 hexagons/12 pentagons), deterministic slight irregularity, independently lifted caps and narrow seams. Seventeen broad sculpted bowls/rims coexist with12x actual LOLA topographic relief. LROC-derived colors restore cool dark-gray basins, warmer pale highlands and per-facet variation; artistic crater depths/placements are labeled as artistic. Earth source/model is unchanged.
+
+Version3 block-moon.json includes fitted corner positions and per-cell dimensions. New lunar-facet-geometry.mjs maps those boundaries onto one instanced terrain batch, keeps cap normals faceted, composes the impact-heat shader and preserves existing damage/ejected pieces. Deeper.64 foundation remains below all crater floors; continuous sealed16384-triangle skin fills the seams. Orbit/size/tidal-lock/gravity props, pad/flag and12-damage destruction threshold remain. Offline generator now requires Pillow only at development time; no runtime package added. Reference and front/three-quarter/side/rear renders live in docs/references/moon/sculpted-craters-review.
+
 # Survey Moon and tidal lock
 
 `BlockMoon` is the reusable static lunar surface in `components/three/moon/`; `OrbitingMoon` adds a synchronous orbit around a supplied Earth center. No new npm packages.
@@ -35,3 +45,8 @@ Planet destruction threshold: Earth explodes after 20 projectile impacts, Moon a
 Lunar tile readability: Moon impacts now eject the actual hit hexagonal instances outward, tumble/fade them, and permanently remove those instances for the session. Darken the continuous lunar survey skin beneath each hit to make exposed impact scars visible; retain sealed geometry rather than opening see-through holes. Use radial lunar-local debris directions and restrained speed; animate debris only before the full Moon explosion begins. The 12-hit threshold, red heartbeat/core and whole-Moon breakup remain. Reduced motion skips flying fragments.
 
 Earth-loss Moon motion: keep the tidal-locked inclined orbit while Earth exists. At Earth exploding/gone, release the Moon once from its current orbital pose, retaining the analytic tangent velocity. Continue straight-line inertial motion without acceleration or drag; add slow three-axis tumbling and stop forcing its near side toward Earth. Existing lunar damage/full explosion behavior remains available. Reduced motion freezes automatic drift/tumble; reload restores orbit. This is a stylized loss-of-gravity transition, not an N-body simulation.
+
+
+### Optional whole-body breakup (2026-10-30)
+
+BlockMoon / OrbitingMoon accepts `explosionsEnabled`, defaulting to `false`. Opt in with `explosionsEnabled={true}` to restore the existing hit-threshold explosion. Craters, scorch/heat and local impact effects stay enabled. Changing the prop updates the existing impact target without clearing its damage. It gates future triggers and does not rewind an already-started breakup. OrbitingMoon forwards the flag to its BlockMoon.

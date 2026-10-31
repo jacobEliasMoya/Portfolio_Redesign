@@ -30,8 +30,8 @@ export function samplePlanetContacts(scene,position,hullRadius,now){
   bodyMotion.set(object,{position:center.clone(),time:now});
   const radius=(target.foundation>2?3:.82)*scale;if(position.distanceTo(center)>radius*1.4+hullRadius)return;
   const normal=position.clone().sub(center).normalize();if(normal.lengthSq()===0)normal.set(0,1,0);
-  const from=center.clone().addScaledVector(normal,radius*1.4+hullRadius),to=center.clone().addScaledVector(normal,radius*.8);
+  const from=center.clone().addScaledVector(normal,radius*1.4+hullRadius),to=center.clone().addScaledVector(normal,radius*(target.craterMode?.45:.8));
   const hit=target.query(from,to,now);
-  contacts.push({point:hit?hit.point:center.clone().addScaledVector(normal,target.foundation*scale),normal,velocity});
+  contacts.push({point:hit?hit.point:center.clone().addScaledVector(normal,target.foundation*scale),normal:hit?.normal??normal,velocity});
  });return contacts;
 }

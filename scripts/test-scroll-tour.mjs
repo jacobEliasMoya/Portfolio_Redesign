@@ -24,14 +24,16 @@ test("wheel directions retrace the tour and normalize line/page deltas",()=>{
  assert.equal(wheelTourProgress(0,2,1),wheelTourProgress(0,32));assert.equal(wheelTourProgress(1,100),1);assert.equal(wheelTourProgress(0,-100),0);
 });
 
-test("opening view stays at the original camera while landmarks move, then scroll enters the tour",()=>{
+test("opening view follows behind the Moon looking inward at Earth, then scroll visits Jake",()=>{
  const tour=createScrollTour(),anchors=createTourAnchors();
+ let previous=tour.sample(0,anchors).position.clone();
  for(let i=0;i<10;i++){
-  anchors.jake.x+=1;anchors.space.z-=1;anchors.moon.z+=2;
-  const opening=tour.sample(0,anchors);
-  assert.deepEqual(opening.position.toArray(),[0,0,22]);assert.deepEqual(opening.target.toArray(),[0,.35,-9]);
+  anchors.moon.x+=1;anchors.moon.z+=2;
+  const opening=tour.sample(0,anchors),outward=anchors.moon.clone().sub(anchors.earthCenter),behind=opening.position.clone().sub(anchors.moon);
+  assert.ok(behind.dot(outward)>0,"camera must be outside the Moon's orbit looking inward");
+  assert.ok(behind.length()>=Math.max(9,anchors.moonRadius*5)*.8);assert.ok(opening.target.equals(anchors.earthCenter));
+  assert.ok(opening.position.distanceTo(previous)>.1);previous.copy(opening.position);
  }
- assert.ok(tour.sample(.01,anchors).position.distanceTo(new (anchors.jake.constructor)(0,0,22))>0);
- assert.ok(tour.sample(.25,anchors).target.equals(anchors.jake));
- assert.equal(stepTourStops(.25,-1),0);
+ assert.ok(tour.sample(.01,anchors).position.distanceTo(previous)>0);
+ assert.ok(tour.sample(.25,anchors).target.equals(anchors.jake));assert.equal(stepTourStops(.25,-1),0);
 });

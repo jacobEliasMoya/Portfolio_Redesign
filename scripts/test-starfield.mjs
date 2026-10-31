@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {buildStarfield} from "../components/three/space/starfield-data.mjs";
 test("starfield is repeatable, bounded and leaves the flight region empty",()=>{
  const data=buildStarfield();assert.deepEqual(data,buildStarfield());assert.notDeepEqual(data,buildStarfield(83));
- assert.equal(data.points.length,1580);assert.equal(data.accents.length,28);
+ assert.equal(data.points.length,1760);assert.equal(data.accents.length,48);
  for(const star of [...data.points,...data.accents]){
   const r=Math.hypot(star.position[0],star.position[1]-.35,star.position[2]+9);
   assert.ok(r>=55-1e-8&&r<=280+1e-8);assert.ok(star.size>0&&star.size<.3);assert.ok(star.color.every(c=>c>0&&c<=1));

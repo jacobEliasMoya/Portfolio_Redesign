@@ -23,3 +23,10 @@ export function createLunarFlagGeometry(){
 
 /** Temporary launch wash, anchored at the pole and strongest at the free edge. */
 export function flagLaunchWash(x,y,time,strength){if(x<=0||strength<=0)return 0;return Math.pow(Math.max(0,x/FLAG_WIDTH),1.25)*strength*(Math.sin(x*24+y*11-time*15)*.019+Math.sin(x*39-time*21)*.006);}
+
+/** A bounded pointer-local fabric push; the pole and printed layers stay aligned. */
+export function flagHoverWash(x,y,time,pointerX,pointerY,strength){
+ if(x<=0||strength<=0)return 0;
+ const distance=Math.hypot(x-pointerX,y-pointerY),anchor=Math.min(1,x/FLAG_WIDTH);
+ return .018*Math.min(1,strength)*anchor*Math.exp(-distance*distance/.025)*(.7+.3*Math.sin(time*7-distance*20));
+}

@@ -1,3 +1,4 @@
+import {createImpactCraters} from "../planet/impact-craters.mjs";
 import {chargedDamage} from "./weapon-charge.mjs";
 import {impactPalette} from "../planet/impact-material.mjs";
 import {createPlanetExplosion} from "../planet/planet-explosion.mjs";
@@ -14,8 +15,9 @@ export function segmentSphereTime(a,b,center,radius){
  const t=(-dot-Math.sqrt(disc))/length;return t>=0&&t<=1?t:null;
 }
 /** Spatially indexed instance bounds; exact mesh triangles are intentionally avoided. */
-export function createDestructible(mesh,dead,{blast=.22,padding=.04,dynamic=false,foundation=0,mode="destroy",threshold=0}={}){
- const planet=createPlanetExplosion(mesh,threshold,{excluded:mode==="explode"?dead:null,neutralBurst:mode==="explode"&&foundation>0&&foundation<2});
+export function createDestructible(mesh,dead,{blast=.22,padding=.04,dynamic=false,foundation=0,mode="destroy",threshold=0,explosionsEnabled=true,craterSurfaces=/** @type {any} */(null)}={}){
+ const planet=createPlanetExplosion(mesh,threshold,{enabled:explosionsEnabled,excluded:mode==="explode"?dead:null,neutralBurst:(mode==="explode"||mode==="crater")&&foundation>0&&foundation<2});
+ const craters=mode==="crater"?createImpactCraters(mesh,{foundation,surfaces:craterSurfaces}):null;
  const impactMarks=[],scars=new Map(),debris=new Map(),debrisTransform=new Object3D(),debrisColor=new Color();
  const cells=new Map(),points=[],cell=.4,inverse=new Matrix4(),a=new Vector3(),b=new Vector3(),p=new Vector3();
  let updated=-Infinity,maxRadius=0,allExploded=false,indexCursor=0,indexReady=false,indexOuterRadius=0;
@@ -26,7 +28,7 @@ export function createDestructible(mesh,dead,{blast=.22,padding=.04,dynamic=fals
  function appendIndex(limit){
   const m=mesh.instanceMatrix.array,end=Math.min(mesh.count,indexCursor+limit);
   for(;indexCursor<end;indexCursor++){
-   const i=indexCursor;if(dead.has(i)&&mode!=="dent")continue;const n=i*16;
+   const i=indexCursor;if(dead.has(i)&&mode!=="dent"&&mode!=="crater")continue;const n=i*16;
    const sx=Math.hypot(m[n],m[n+1],m[n+2]),sy=Math.hypot(m[n+4],m[n+5],m[n+6]),sz=Math.hypot(m[n+8],m[n+9],m[n+10]);
    if(sx+sy+sz<1e-9)continue;
    const radius=Math.hypot(sx*dimensions.x,sy*dimensions.y,sz*dimensions.z)*.5+padding;
@@ -56,7 +58,7 @@ export function createDestructible(mesh,dead,{blast=.22,padding=.04,dynamic=fals
    for(let dx=-reach;dx<=reach;dx++)for(let dy=-reach;dy<=reach;dy++)for(let dz=-reach;dz<=reach;dz++)for(const item of cells.get(key(x+dx,y+dy,z+dz))??[])out.add(item);
   }return out;
  }
- return {mesh,foundation,impactMarks,prepareIndex(limit=512){if(dynamic)return true;return indexReady||appendIndex(limit);},explodeAll(center=new Vector3(0,.35,-9)){
+ return {mesh,foundation,impactMarks,craterMode:!!craters,prepareIndex(limit=512){if(dynamic)return true;return indexReady||appendIndex(limit);},explodeAll(center=new Vector3(0,.35,-9)){
   if(allExploded)return 0;allExploded=true;let count=0;
   for(let i=0;i<mesh.count;i++){
    if(dead.has(i))continue;
@@ -69,7 +71,7 @@ export function createDestructible(mesh,dead,{blast=.22,padding=.04,dynamic=fals
    dead.add(i);count++;
   }
   mesh.instanceMatrix.needsUpdate=true;return count;
- },planetPhase:planet.phase,planetGlow:planet.glow,planetHits:planet.hits,stepPlanetExplosion:planet.step,stepDebris(delta,reducedMotion=false){
+ },setExplosionsEnabled:planet.setEnabled,planetPhase:planet.phase,planetGlow:planet.glow,planetHits:planet.hits,stepPlanetExplosion:planet.step,stepDebris(delta,reducedMotion=false){
   if(!debris.size)return 0;
   const dt=Math.min(.1,Math.max(0,delta));
   for(const [id,fragment] of debris){
@@ -95,17 +97,29 @@ export function createDestructible(mesh,dead,{blast=.22,padding=.04,dynamic=fals
   if(dynamic&&segmentSphereTime(a,b,p.set(0,0,0),32)===null)return null;
   rebuild(now);let best=null,index=null;
   for(const item of nearby(a,b,maxRadius)){
-   if(dead.has(item.i)&&mode!=="dent")continue;p.set(item.x,item.y,item.z);
+   if(dead.has(item.i)&&mode!=="dent"&&mode!=="crater")continue;p.set(item.x,item.y,item.z);
    const t=segmentSphereTime(a,b,p,item.radius);
    if(t!==null&&(best===null||t<best)){best=t;index=item.i;}
   }
-  if(foundation){const t=segmentSphereTime(a,b,p.set(0,0,0),foundation);if(t!==null&&(best===null||t<best)){best=t;index=null;}}
+  if(foundation&&!craters){const t=segmentSphereTime(a,b,p.set(0,0,0),foundation);if(t!==null&&(best===null||t<best)){best=t;index=null;}}
   if(best===null)return null;
   const local=a.clone().lerp(b,best);
-  return {t:best,point:from.clone().lerp(to,best),destroy(power=0){
+  return {t:best,point:from.clone().lerp(to,best),normal:craters?.normalAt(local).transformDirection(mesh.matrixWorld),destroy(power=0){
    const charge=Math.max(0,Math.min(1,Number.isFinite(power)?power:0));
    const impactRadius=blast*(1+3*charge*charge),damage=chargedDamage(charge);
    const recordDamage=()=>{for(let i=0;i<damage;i++)planet.recordHit();};
+   if(craters){
+    const hit=(index===null?local:p.set(byIndex[index].x,byIndex[index].y,byIndex[index].z)).clone();
+    impactMarks.push({x:hit.x,y:hit.y,z:hit.z,radius:impactRadius,power:charge});
+    const count=craters.stamp(hit,impactRadius,charge,(id,position,moved)=>{
+     const entry=byIndex[id];if(entry)relocate(entry,position.x,position.y,position.z);if(moved)dead.add(id);
+     const distance=position.distanceTo(hit);if(distance>impactRadius*1.1)return;
+     const scar=scars.get(id)??{count:0};scar.count=Math.min(8,scar.count+1);scars.set(id,scar);
+     const palette=impactPalette(distance,impactRadius,scar.count);mesh.setColorAt(id,new Color().setRGB(palette.r,palette.g,palette.b));const attribute=mesh.geometry.getAttribute("impactHeat");if(attribute){attribute.setX(id,palette.heat);attribute.needsUpdate=true;}
+    });
+    if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
+    recordDamage();return count;
+   }
    if(index===null){recordDamage();return 0;}
    const hit=byIndex[index];if(!hit)return 0;
    const hx=hit.x,hy=hit.y,hz=hit.z;

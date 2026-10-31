@@ -4,6 +4,7 @@
   --font-mono: ui-monospace, monospace;
   --font-display: var(--font-sabo-filled), Arial, sans-serif;
   --font-outline: var(--font-sabo-outline), Arial, sans-serif;
+  --font-arcade: var(--font-press-start-2p), monospace;
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: #000; font-family: Arial, Helvetica, sans-serif; font-synthesis: none; }

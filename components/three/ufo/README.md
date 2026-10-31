@@ -1,3 +1,7 @@
+## Current weapon HUD and damage - 2026-10-30
+
+Main scene has a compact centered weapon bar with actual live3D bolt/ray miniatures, clickable/keyboard slots1/2 and reserved3. Switching briefly announces the selected Sabo weapon name, then disperses its actual micro-cubes. Reduced motion holds static text. The HUD ray has no endpoint flare; the in-world ray retains its contact effect. Ray contact now deals2damage every.2seconds (power.2), half its previous damage; immediate red hold-to-fire behavior remains. See docs/current-scene.md for current behavior and verification; older experiments below are historical.
+
 # Classic UFO
 
 Original procedural saucer model in `components/three/ufo/`, matching the scene's chunky beveled polygon language.

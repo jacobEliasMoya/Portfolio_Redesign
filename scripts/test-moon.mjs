@@ -4,16 +4,16 @@ import { readFileSync } from "node:fs";
 import { BufferGeometry, DoubleSide, Euler, Float32BufferAttribute, Mesh, MeshBasicMaterial, Quaternion, Raycaster, Vector3 } from "three";
 import { getMoonOrbitPose, MOON_ORBIT } from "../components/three/moon/moon-orbit.mjs";
 const moon=JSON.parse(readFileSync(new URL("../public/models/moon/block-moon.json",import.meta.url)));
-test("lunar geometry preserves signed survey relief and covers the whole sphere",()=>{
+test("sculpted lunar geometry preserves its survey underlay and covers the whole sphere",()=>{
   const count=moon.sizes.length;
-  assert.ok(count>5000&&count<60000);
+  assert.ok(count>3000&&count<60000);
   assert.ok(Math.min(...moon.elevationsMetres)<-5000&&Math.max(...moon.elevationsMetres)>5000);
   const faces=new Set();
   for(let i=0;i<count;i++){
     const p=moon.positions.slice(i*3,i*3+3),n=moon.normals.slice(i*3,i*3+3);
-    const radius=Math.hypot(...p),expected=moon.radius*(1+moon.elevationsMetres[i]/1737400*moon.reliefExaggeration);
+    const radius=Math.hypot(...p),expected=moon.radius*(1+moon.elevationsMetres[i]/1737400*moon.reliefExaggeration)+moon.artisticOffsets[i]+moon.facetLifts[i];
     assert.ok(Math.abs(radius-expected)<.000002);
-    assert.ok(radius>.70&&radius<.95);
+    assert.ok(radius>moon.foundation+.035&&radius<.91);
     assert.ok(Math.abs(Math.hypot(...n)-1)<.000001);
     const axis=n.map(Math.abs).indexOf(Math.max(...n.map(Math.abs)));faces.add(`${axis}:${Math.sign(n[axis])}`);
   }
@@ -43,9 +43,9 @@ test("survey skin is sealed around the globe with outward triangle winding",()=>
     if(normal.lengthSq()>1e-16)assert.ok(normal.dot(a)>0);
   }
   assert.ok(moon.sizes.length<20000,"use a readable moderate tile count");
-  assert.ok(Math.min(...moon.sizes)>.029,"no tiny adaptive hexagons");
-  assert.ok(Math.max(...moon.sizes)/Math.min(...moon.sizes)<1.6,"consistent tile size range");
-  assert.ok(moon.colors.reduce((a,b)=>Math.max(a,b),-Infinity)-moon.colors.reduce((a,b)=>Math.min(a,b),Infinity)>.5,"preserve maria/highland contrast");
+  assert.ok(Math.min(...moon.sizes)>.029,"no tiny adaptive polygons");
+  assert.ok(Math.max(...moon.sizes)/Math.min(...moon.sizes)<2.0,"consistent tile size range");
+  assert.ok(moon.colors.reduce((a,b)=>Math.max(a,b),-Infinity)-moon.colors.reduce((a,b)=>Math.min(a,b),Infinity)>.3,"retain meaningful basin/highland and per-facet contrast");
 });
 
 test("opaque lunar terrain blocks sightlines through the globe from every direction",()=>{
@@ -61,7 +61,7 @@ test("opaque lunar terrain blocks sightlines through the globe from every direct
     ray.set(n.clone().multiplyScalar(3),n.clone().negate());
     const hits=ray.intersectObject(surface);
     assert.ok(hits.length>0,"survey shell must seal the background");
-    assert.ok(hits[0].distance<2.31,"front surface should occlude the far side");
+    assert.ok(hits[0].point.length()>moon.foundation+.02,"front surface should occlude the foundation and far side");
   }
   geometry.dispose();material.dispose();
 });
