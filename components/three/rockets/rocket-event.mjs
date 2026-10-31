@@ -4,6 +4,7 @@ export const ROCKET_RARITIES=Object.freeze([
  Object.freeze({id:"legendary",label:"LEGENDARY",chance:.03,reward:25000,color:"#efc563",engines:1}),
 ]);
 export const ROCKET_FLIGHT_SECONDS=22,ROCKET_BLAST_SECONDS=1.65;
+export const ROCKET_STAGING=Object.freeze({sideBoosters:7,heavyCore:10,standardCore:9,coast:.2,returnLife:8});
 const unit=random=>Math.max(0,Math.min(1-Number.EPSILON,random()));
 export const nextRocketDelay=random=>60+60*unit(random);
 export function rollRocketRarity(random=Math.random){const ticket=Math.floor(unit(random)*10000);let threshold=0;for(const tier of ROCKET_RARITIES){threshold+=Math.round(tier.chance*10000);if(ticket<threshold)return tier;}return ROCKET_RARITIES.at(-1);}

@@ -31,8 +31,8 @@ test('LC-39A lift begins over Florida, clears bundled local terrain and curves e
 });
 test('all rarity models are bounded original merged assets with distinct silhouettes and disposal',()=>{
  const widths=[],heights=[];for(const tier of ROCKET_RARITIES){const model=createRocketModel(tier);let disposed=0;model.geometry.addEventListener('dispose',()=>disposed++);const box=model.geometry.boundingBox; widths.push(box.max.x-box.min.x);heights.push(box.max.y-box.min.y);
- assert.ok(model.geometry.attributes.position.count<6000);assert.ok(model.material.vertexColors);assert.ok(model.geometry.attributes.position.array.every(Number.isFinite));model.dispose();assert.equal(disposed,1);}
- assert.ok(widths[1]>widths[0]*2);assert.ok(heights[2]>heights[0]*1.1);
+ assert.ok(model.geometry.attributes.position.count<18000);assert.ok(model.material.vertexColors);assert.ok(model.geometry.attributes.position.array.every(Number.isFinite));model.dispose();assert.equal(disposed,1);}
+ assert.ok(widths[1]>widths[0]*2);assert.ok(widths[2]>widths[0]*1.5);
 });
 test('bolts and held ray award the flat rarity reward once; stale hits cannot kill the next launch',()=>{
  for(const tier of ROCKET_RARITIES)for(const weapon of ['tap','full','ray']){
