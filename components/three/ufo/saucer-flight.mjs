@@ -1,4 +1,6 @@
 import { Euler,Quaternion,Vector3 } from "three";
+/** Main-universe room to retreat; small preview scenes retain their own bounds. */
+export const sceneFlightRadius=earthRadius=>Math.max(120,earthRadius*24);
 const scratchByFlight=new WeakMap();
 function scratchForFlight(state){let scratch=scratchByFlight.get(state);if(!scratch){scratch={forward:new Vector3(),right:new Vector3(),up:new Vector3(),radial:new Vector3(),delta:new Quaternion(),angles:new Euler()};scratchByFlight.set(state,scratch);}return scratch;}
 function syncAngles(state,angles){angles.setFromQuaternion(state.orientation,"YXZ");state.yaw=angles.y;state.pitch=-angles.x;state.roll=angles.z;}

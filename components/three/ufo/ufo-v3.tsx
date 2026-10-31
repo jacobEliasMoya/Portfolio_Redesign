@@ -8,10 +8,10 @@ import {applyLandingGear} from "./landing-suspension.mjs";
 import {SaucerPropulsion} from "./saucer-propulsion";
 import {SaucerReflections} from "./saucer-reflections";
 import {stepCannonRotation} from "./alien-cannon.mjs";
-export function UFOV3({scale=1,position=[0,0,0],rotation=[0,0,0],hover=true,reducedMotion=false,gearRef,engineRef,suspensionRef}:ComponentProps<typeof ClassicUFO>&{gearRef?:RefObject<number>;engineRef?:RefObject<number>;suspensionRef?:RefObject<number>}){
+export function UFOV3({scale=1,position=[0,0,0],rotation=[0,0,0],hover=true,reducedMotion=false,gearRef,engineRef,suspensionRef,propulsionDisabledRef}:ComponentProps<typeof ClassicUFO>&{gearRef?:RefObject<number>;engineRef?:RefObject<number>;suspensionRef?:RefObject<number>;propulsionDisabledRef?:RefObject<boolean>}){
  const model=useMemo(()=>createUFOV3(),[]),power=useRef(0),clock=useRef(0),rig=useRef<Group>(null);
  useEffect(()=>()=>disposeUFOV3(model),[model]);
- useFrame((state,delta)=>{const current=rig.current;if(!current)return;const dt=Math.min(delta,.1),target=engineRef?.current??0;power.current=reducedMotion?target:power.current+(target-power.current)*(1-Math.exp(-5*dt));
+ useFrame((state,delta)=>{const current=rig.current;if(!current)return;const dt=Math.min(delta,.1),target=engineRef?.current??0;power.current=propulsionDisabledRef?.current?0:reducedMotion?target:power.current+(target-power.current)*(1-Math.exp(-5*dt));
   const dome=current.getObjectByName("v3-dome"),gear=current.getObjectByName("v3-gear"),amount=gearRef?.current??0;
   applyLandingGear(gear,amount,suspensionRef?.current??0);
   stepCannonRotation(current.getObjectByName("alien-cannon-rotor"),dt,reducedMotion);

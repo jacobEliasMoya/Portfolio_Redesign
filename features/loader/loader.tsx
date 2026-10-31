@@ -22,11 +22,11 @@ export function LoaderExperience() {
   const failed = errors.some((item) => item.startsWith("/models/jakes-space-particle-core.json") || item.startsWith("/models/earth/") || item.startsWith("/models/moon/")) || timedOut;
   const percent = prepared && !active ? 100 : Math.min(99, Math.round(progress));
   return <main className="loader-experience">
-    <div className="loader-viewport" role="region" aria-label="A procedural starfield surrounds the scene. A block-built Earth appears first, then silver particles converge into Jakes Space around it. Drag in any direction to rotate Earth. A survey-derived Moon orbits with the same face always turned toward Earth.">
+    <div className="loader-viewport" role="region" aria-label="A procedural starfield surrounds the scene. A block-built Earth appears first, then silver particles converge into Jakes Space around it. Drag in any direction to rotate Earth. A survey-derived Moon stays beside Earth with a parked saucer.">
       <LoaderScene zoomSteps={0} zoomReset={0} reducedMotion={reducedMotion} replay={0} assetsReady={prepared && !active} onPhaseChange={onPhaseChange} onPrepared={onPrepared} onComplete={onComplete} earthReady={earthReady} onEarthReady={onEarthReady} />
     </div>
     <div className="loader-bottom" aria-label="Scene loading">
-      <span className="loader-accessible-status" role="status">{failed ? "Scene loading failed" : ready ? "Scene ready. Scroll to travel through the scene; drag to rotate Earth. A survey-derived Moon orbits with the same face always turned toward Earth." : earthReady ? "Forming Jakes Space" : "Preparing Earth"}</span>
+      <span className="loader-accessible-status" role="status">{failed ? "Scene loading failed" : ready ? "Scene ready. Scroll to travel through the scene; drag to rotate Earth. A survey-derived Moon stays beside Earth with a parked saucer." : earthReady ? "Forming Jakes Space" : "Preparing Earth"}</span>
       <div className={ready?"loader-accessible-status":"loader-progress"} role="progressbar" aria-label="Scene asset download" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}><span style={{width: `${percent}%`}} /></div>
       {failed && <button className="loader-retry" onClick={() => window.location.reload()}>Retry loading scene</button>}
     </div>

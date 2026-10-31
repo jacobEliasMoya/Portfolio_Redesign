@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useMemo,useRef,type RefObject} from "react";
 import {useFrame,useThree} from "@react-three/fiber";
+import {createSingularityCamera,singularityCameraPose} from "../black-hole/ship-capture.mjs";
 import {PerspectiveCamera,Vector3} from "three";
 import type {HudStore} from "../ufo/arcade-hud";
 import {markCameraReady} from "@/components/three/ufo/lunar-launch.mjs";
@@ -13,8 +14,9 @@ export function FollowSceneCamera({hudStore,tourRequest,piloting,targetRef,headi
  const canvas=useThree(s=>s.gl.domElement),invalidate=useThree(s=>s.invalidate),aspect=useThree(s=>s.size.width/Math.max(1,s.size.height));
  const readyRef=useRef(ready&&piloting),tourReadyRef=useRef(ready&&!piloting),tourPosition=useRef(0);
  const tour=useMemo(()=>createScrollTour(),[]);
- const tourAnchors=useRef(createTourAnchors());
+ const tourAnchors=useRef({...createTourAnchors(),overviewWidth:0,aspect:1});
  const initialized=useRef(false),hudTour=useRef({tourIndex:0});
+ const singularityView=useRef(createSingularityCamera());
  const aim=useRef(new Vector3(0,.35,-9));
  const follow=useMemo(()=>createFollowCameraScratch(),[]),worldUp=useMemo(()=>new Vector3(0,1,0),[]);
  useEffect(()=>{markCameraReady(launchCameraReady,false);readyRef.current=ready&&piloting;tourReadyRef.current=ready&&!piloting;invalidate();},[ready,piloting,invalidate,launchCameraReady]);
@@ -22,17 +24,26 @@ export function FollowSceneCamera({hudStore,tourRequest,piloting,targetRef,headi
  const tourProgress=useScrollTour(canvas,tourReadyRef,zoomSteps,zoomReset,invalidate,ready&&!piloting,tourRequest);
  useFrame((scene,delta)=>{
   const anchors=tourAnchors.current;
+  const hole=scene.scene.getObjectByName("hex-black-hole");
+  if(hole?.visible&&hole.userData.singularityShipCaptured){
+   const pose=singularityCameraPose(scene.camera.position,hole.position,hole.userData.singularityCaptureRadius,singularityView.current,aspect),blend=reducedMotion?1:1-Math.exp(-3*Math.min(delta,.1));
+   scene.camera.position.lerp(pose.position,blend);aim.current.lerp(pose.target,blend);
+   orientFollowCamera(scene.camera,aim.current,pose.up,blend,follow);scene.camera.updateMatrixWorld();initialized.current=true;scene.invalidate();return;
+  }
   let earthGone=false;scene.scene.traverse(object=>{
    const target=getProjectileTarget(object);if(target?.foundation>2&&target.planetPhase()!=="intact")earthGone=true;
    if(!piloting){
     if(object.name==="tour-jake"&&object.visible&&object.userData.tourFocus){object.updateWorldMatrix(true,false);anchors.jake.copy(object.userData.tourFocus).applyMatrix4(object.matrixWorld);if(object.userData.tourSpaceFocus)anchors.space.copy(object.userData.tourSpaceFocus).applyMatrix4(object.matrixWorld);}
     if(object.name==="tour-california")object.getWorldPosition(anchors.california);
-    if(object.name==="tour-moon"){object.getWorldPosition(anchors.moon);anchors.moonRadius=.82*object.matrixWorld.getMaxScaleOnAxis();}
+    if(object.name==="tour-moon")object.getWorldPosition(anchors.moon);
+    if(object.name==="tour-jake"&&object.userData.openingFocus){object.updateWorldMatrix(true,false);anchors.overview.copy(object.userData.openingFocus).applyMatrix4(object.matrixWorld);anchors.overviewWidth=object.userData.openingWidth*object.matrixWorld.getMaxScaleOnAxis();}
    }
   });
   if(!piloting)tourPosition.current=reducedMotion?tourProgress.current:tourPosition.current+(tourProgress.current-tourPosition.current)*(1-Math.exp(-5*Math.min(delta,.1)));
   if(!piloting&&hudStore){hudTour.current.tourIndex=Math.round(tourPosition.current*(TOUR_STOPS.length-1));hudStore.publish(hudTour.current);}
-  const radius=earthGone?0:Math.min(6.5,aspect*9.4);anchors.earthRadius=radius;
+  const fullEarthRadius=Math.min(6.5,aspect*9.4),radius=earthGone?0:fullEarthRadius;anchors.earthRadius=radius;
+  anchors.moonRadius=fullEarthRadius*.273;
+  anchors.aspect=aspect;
   const pose=piloting?followCameraPose(targetRef.current,zoom.current,radius,headingRef.current,upRef?.current??worldUp,follow):tour.sample(tourPosition.current,anchors);
   const amount=reducedMotion||!initialized.current?1:1-Math.exp(-4*Math.min(delta,.1));
   scene.camera.position.lerp(pose.position,amount);aim.current.lerp(pose.target,amount);

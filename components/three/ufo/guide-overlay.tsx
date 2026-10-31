@@ -15,7 +15,7 @@ const movementControls=[
 const weapons=[
  {key:"1",name:"Charged bolts",action:"charge",description:"Release to fire."},
  {key:"2",name:"Red death ray",action:"fire",description:"No charge; release to stop."},
- {key:"3",name:"Reserved",action:null,description:"For a future weapon."},
+ {key:"3",name:"Singularity",action:null,description:"Unlock above 6,767 points. Press F or click to fire an atom bomb. Impact creates a black hole with immediate suction. Four seconds of ship immunity after impact; one shot per universe. Missed shots expire. Fly backward with S to retreat while watching; the pull has a finite range. Crossing the black core cuts propulsion and locks the camera on the black hole until Reset Universe. Reset Universe restores the scene and score."},
 ];
 
 function GuideKeys({keys,inline=false}:{keys:string[];inline?:boolean}){
@@ -67,6 +67,7 @@ export function GuideOverlay({ready,reducedMotion,onReset}:{ready:boolean;reduce
       <section className={styles.guideSection} aria-label="Weapons">
        <h3>WEAPONS</h3>
        <dl className={styles.guideWeaponList}>{weapons.map(({key,name,action,description})=><div key={key}><dt><GuideKeys keys={[key]}/></dt><dd><strong>{name}</strong><p>{action&&<>Hold click or <GuideKeys keys={["F"]} inline/> to {action}. </>}{description}</p></dd></div>)}</dl>
+       <p className={styles.guideNote}>Destroy a plane for 1,000 points. Each plane scores once. Cape Canaveral rockets launch every 60–120 seconds: Standard (80%) 5,000 points, Rare (17%) 10,000, Legendary (3%) 25,000. Each rocket rewards one destruction.</p>
       </section>
      </div>
      <section className={styles.guideSection} aria-label="Ship and landing">

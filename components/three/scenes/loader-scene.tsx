@@ -13,18 +13,21 @@ import {createHudState} from "@/components/three/ufo/hud-state.mjs";
 import { PilotSaucer } from "@/components/three/ufo/pilot-saucer";
 import { OrbitingMoon } from "@/components/three/moon";
 import { CloudLayer } from "@/components/three/clouds";
+import { Singularity } from "@/components/three/black-hole/singularity";
+import { CapeLaunches } from "@/components/three/rockets/cape-launches";
+import { AirTraffic } from "@/components/three/air-traffic/air-traffic";
 import { BlockEarth } from "@/components/three/planet";
 import { ParticleWordmark, type IntroPhase } from "@/components/three/objects/particle-wordmark";
 import { Button } from "@/components/ui/atoms/button";
 
-function EarthBackdrop({ reducedMotion, onRevealed, earthReady, piloting }: { reducedMotion: boolean; onRevealed: () => void; earthReady: boolean; piloting: boolean }) {
+function EarthBackdrop({ reducedMotion, onRevealed, earthReady, piloting, flightReady, hudStore }: { reducedMotion: boolean; onRevealed: () => void; earthReady: boolean; piloting: boolean; flightReady:boolean; hudStore:ReturnType<typeof createHudState> }) {
   const aspect = useThree((state) => state.size.width / Math.max(1, state.size.height));
-  return <BlockEarth position={[0, 0.35, -9]} radius={Math.min(6.5, aspect * 9.4)} autoRotate draggable={!piloting} revealed onRevealed={onRevealed} reducedMotion={reducedMotion}><CloudLayer enabled={earthReady} reducedMotion={reducedMotion} /></BlockEarth>;
+  return <BlockEarth position={[0, 0.35, -9]} radius={Math.min(6.5, aspect * 9.4)} autoRotate draggable={!piloting} revealed onRevealed={onRevealed} reducedMotion={reducedMotion}><CloudLayer enabled={earthReady} reducedMotion={reducedMotion} /><AirTraffic enabled={earthReady} reducedMotion={reducedMotion}/><CapeLaunches store={hudStore} enabled={earthReady&&flightReady} reducedMotion={reducedMotion}/></BlockEarth>;
 }
 
 function LunarCompanion({ enabled, reducedMotion, piloting }: { enabled: boolean; reducedMotion: boolean; piloting:boolean }) {
   const aspect = useThree((state)=>state.size.width/Math.max(1,state.size.height));
-  return <OrbitingMoon draggable={!piloting} earthRadius={Math.min(6.5,aspect*9.4)} enabled={enabled} reducedMotion={reducedMotion} />;
+  return <OrbitingMoon center={[0,4.35,-10.5]} autoOrbit={false} draggable={!piloting} earthRadius={Math.min(6.5,aspect*9.4)} enabled={enabled} reducedMotion={reducedMotion} />;
 }
 
 function FlightCompanion({hudStore,actionRequest,launchCameraReady,active,visible,reducedMotion,trackPositionRef,trackHeadingRef,trackUpRef}:{hudStore:ReturnType<typeof createHudState>;actionRequest:number;launchCameraReady:RefObject<boolean>;active:boolean;visible:boolean;reducedMotion:boolean;trackPositionRef:RefObject<Vector3>;trackHeadingRef:RefObject<Vector3>;trackUpRef:RefObject<Vector3>}) {
@@ -70,10 +73,11 @@ export default function LoaderScene({ reducedMotion, replay, zoomSteps, zoomRese
     <directionalLight position={[3, 5, 6]} intensity={4} color="#ffffff" />
     <directionalLight position={[-4, 0, 3]} intensity={1.7} color="#c6d0df" />
     <directionalLight position={[1, -3, -2]} intensity={2} color="#ffffff" />
-    <Suspense fallback={null}><EarthBackdrop piloting={piloting} earthReady={earthReady} onRevealed={onEarthReady} reducedMotion={reducedMotion} /></Suspense>
+    <Suspense fallback={null}><EarthBackdrop hudStore={hudStore} flightReady={flightReady} piloting={piloting} earthReady={earthReady} onRevealed={onEarthReady} reducedMotion={reducedMotion} /></Suspense>
     <Suspense fallback={null}><LunarCompanion piloting={piloting} enabled={earthReady} reducedMotion={reducedMotion} /></Suspense>
     <Suspense fallback={null}><ParticleWordmark shipPositionRef={flightPosition} piloting={piloting} startRequested={earthReady} reducedMotion={reducedMotion} replay={replay} assetsReady={assetsReady} onPhaseChange={onPhaseChange} onPrepared={onPrepared} onComplete={() => { setFlightReady(true); onComplete(); }} /></Suspense>
-    <FlightCompanion hudStore={hudStore} actionRequest={actionRequest} trackUpRef={flightUp} launchCameraReady={launchCameraReady} trackHeadingRef={flightHeading} trackPositionRef={flightPosition} active={piloting} visible={earthReady} reducedMotion={reducedMotion}/>
+    <group userData={{singularityShip:true}}><FlightCompanion hudStore={hudStore} actionRequest={actionRequest} trackUpRef={flightUp} launchCameraReady={launchCameraReady} trackHeadingRef={flightHeading} trackPositionRef={flightPosition} active={piloting} visible={earthReady} reducedMotion={reducedMotion}/></group>
+    <Singularity store={hudStore} position={flightPosition} reducedMotion={reducedMotion}/>
   </Canvas>
     <HudLetteringLayer store={lettering} reducedMotion={reducedMotion}/>
     <ArcadeHud store={hudStore} ready={flightReady&&assetsReady} piloting={piloting} reducedMotion={reducedMotion}

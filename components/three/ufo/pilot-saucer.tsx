@@ -11,14 +11,17 @@ import { SaucerProjectiles } from "./saucer-projectiles";
 import { UFOModel,type UFOType } from "./ufo-model";
 import { getFlightInput } from "./flight-controls.mjs";
 import { createWeaponCharge } from "./weapon-charge.mjs";
+import {driftCapturedShip} from "../black-hole/ship-capture.mjs";
+import {createAtomLaunch} from "../black-hole/atom-projectile.mjs";
 import {createWeaponSelection,weaponForKey,type WeaponShot} from "./weapon-selection.mjs";
-import { createFlight, setFlightAttitude,stepFlight } from "./saucer-flight.mjs";
+import { createFlight, setFlightAttitude,stepFlight,sceneFlightRadius } from "./saucer-flight.mjs";
 import {RimPlasma} from "./rim-plasma";
 import type {HudStore} from "./arcade-hud";
-import {IDLE_RIM_DRIVE} from "./rim-plasma.mjs";
+import {IDLE_RIM_DRIVE,OFFLINE_RIM_DRIVE} from "./rim-plasma.mjs";
 
 export function PilotSaucer({hudStore,actionRequest=0,type="hexagonal",launchCameraReady,onLandingStatus,trackPositionRef,trackHeadingRef,trackUpRef,active=false,visible=true,reducedMotion=false,center=[0,0,0],earthRadius=0,scale=.3}:{hudStore?:HudStore;actionRequest?:number;onLandingStatus?:(status:string)=>void;launchCameraReady?:RefObject<boolean>;type?:UFOType;trackPositionRef?:RefObject<Vector3>;trackHeadingRef?:RefObject<Vector3>;trackUpRef?:RefObject<Vector3>;active?:boolean;visible?:boolean;reducedMotion?:boolean;center?:[number,number,number];earthRadius?:number;scale?:number}) {
  const group=useRef<Group>(null),state=useRef(createFlight()),keys=useRef(new Set<string>());
+ const propulsionDisabled=useRef(false);
  const rimDrive=useRef<ReturnType<typeof getFlightInput>>(IDLE_RIM_DRIVE);
  const reset=useRef(true),gearRef=useRef(1),engineRef=useRef(0),suspensionRef=useRef(PARKED_COMPRESSION),mode=useRef("docked"),launchAge=useRef(0);
  const handoff=useRef({age:2,from:new Quaternion(),target:new Quaternion(),cosmetic:new Quaternion(),euler:new Euler(0,0,0,"YXZ")});
@@ -43,12 +46,13 @@ export function PilotSaucer({hudStore,actionRequest=0,type="hexagonal",launchCam
   if(!active)return;
   const previousTabIndex=canvas.getAttribute("tabindex");canvas.setAttribute("tabindex","0");canvas.focus({preventScroll:true});
   const detachWeaponRequests=hudStore?.subscribeWeaponRequest((code:string)=>{
-   if(!visible||document.hidden||document.querySelector("dialog[open]"))return;
-   weapons.current.select(code,charge.current,shotsRef.current);canvas.focus({preventScroll:true});invalidate();
+   if(hudStore?.getSnapshot().singularityShipCaptured||!visible||document.hidden||document.querySelector("dialog[open]"))return;
+   weapons.current.select(code,charge.current,shotsRef.current,hudStore?.getSnapshot().score,hudStore?.getSnapshot().singularityUsed);canvas.focus({preventScroll:true});invalidate();
   });
   const supported=new Set(["KeyL","KeyF","KeyQ","KeyE","KeyC","KeyW","KeyS","KeyA","KeyD","Space","ShiftLeft","ShiftRight","KeyR","ArrowLeft","ArrowRight","ArrowUp","ArrowDown"]);
   const clear=()=>{keys.current.clear();landing.current.requested=false;shotsRef.current=[];weapons.current.cancel(charge.current);invalidate();};
   const key=(e:KeyboardEvent)=>{
+   if(hudStore?.getSnapshot().singularityShipCaptured)return;
    const weaponKey=weaponForKey(e.code);
    if(!supported.has(e.code)&&!weaponKey)return;
    if(document.querySelector("dialog[open]")){clear();return;}
@@ -58,18 +62,18 @@ export function PilotSaucer({hudStore,actionRequest=0,type="hexagonal",launchCam
    if(target&&(target.closest("input,textarea,select,dialog")||target.isContentEditable))return;
    if(weaponKey){
     if(e.ctrlKey||e.metaKey||e.altKey||e.repeat)return;
-    e.preventDefault();weapons.current.select(e.code,charge.current,shotsRef.current);invalidate();return;
+    e.preventDefault();weapons.current.select(e.code,charge.current,shotsRef.current,hudStore?.getSnapshot().score,hudStore?.getSnapshot().singularityUsed);invalidate();return;
    }
    // Space still activates a focused menu button; arrows and flight keys remain available.
    if(e.code==="Space"&&target?.closest("button,a"))return;
    e.preventDefault();
    keys.current.add(e.code);
    if(e.code==="KeyL"&&!e.repeat)landing.current.requested=true;
-   if(e.code==="KeyF"&&!e.repeat)weapons.current.begin("key",performance.now(),charge.current);
+   if(e.code==="KeyF"&&!e.repeat){if(weapons.current.selected==="singularity")hudStore?.fireSingularity(createAtomLaunch(group.current,state.current.velocity,scale));else weapons.current.begin("key",performance.now(),charge.current);}
    if(e.code==="KeyR"){crashed.current=false;reset.current=true;shotsRef.current=[];weapons.current.cancel(charge.current);}
    invalidate();
   };
-  const down=(e:PointerEvent)=>{if(e.button===0&&e.pointerType!=="touch"){canvas.focus({preventScroll:true});weapons.current.begin("pointer",performance.now(),charge.current);invalidate();}};
+  const down=(e:PointerEvent)=>{if(hudStore?.getSnapshot().singularityShipCaptured)return;if(e.button===0&&e.pointerType!=="touch"){canvas.focus({preventScroll:true});if(weapons.current.selected==="singularity")hudStore?.fireSingularity(createAtomLaunch(group.current,state.current.velocity,scale));else weapons.current.begin("pointer",performance.now(),charge.current);invalidate();}};
   const up=(e:PointerEvent)=>{if(e.button!==0)return;const shot=weapons.current.release("pointer",performance.now(),charge.current);if(shot&&shotsRef.current.length<24)shotsRef.current.push(shot);invalidate();};
   const hidden=()=>{if(document.hidden)clear();};
   const modalFocus=(event:FocusEvent)=>{if(event.target instanceof HTMLElement&&event.target.closest("dialog[open]"))clear();};
@@ -77,10 +81,19 @@ export function PilotSaucer({hudStore,actionRequest=0,type="hexagonal",launchCam
   window.addEventListener("keydown",key,{capture:true});window.addEventListener("keyup",key);window.addEventListener("blur",clear);document.addEventListener("visibilitychange",hidden);
   canvas.addEventListener("pointerdown",down);window.addEventListener("pointerup",up);window.addEventListener("pointercancel",clear);
   return()=>{detachWeaponRequests?.();clear();if(previousTabIndex===null)canvas.removeAttribute("tabindex");else canvas.setAttribute("tabindex",previousTabIndex);window.removeEventListener("keydown",key,{capture:true});window.removeEventListener("keyup",key);window.removeEventListener("blur",clear);document.removeEventListener("visibilitychange",hidden);document.removeEventListener("focusin",modalFocus);canvas.removeEventListener("pointerdown",down);window.removeEventListener("pointerup",up);window.removeEventListener("pointercancel",clear);};
- },[active,visible,canvas,invalidate,hudStore]);
+ },[active,visible,canvas,invalidate,hudStore,scale]);
  useFrame((scene,delta)=>{
   rimDrive.current=IDLE_RIM_DRIVE;
   const s=state.current;
+  if(hudStore?.getSnapshot().singularityShipCaptured){
+   propulsionDisabled.current=true;engineRef.current=0;rimDrive.current=OFFLINE_RIM_DRIVE;shotsRef.current=[];weapons.current.cancel(charge.current);keys.current.clear();landing.current.requested=false;crashed.current=false;reset.current=false;mode.current="captured";
+   const hole=scene.scene.getObjectByName("hex-black-hole");if(hole)driftCapturedShip(s,hole.position,delta);
+   if(group.current){group.current.position.copy(s.position);group.current.visible=visible&&!hudStore.getSnapshot().singularityShipConsumed;}
+   trackPositionRef?.current.copy(s.position);scene.invalidate();return;
+  }
+  if(hudStore?.getSnapshot().singularityShipConsumed){if(group.current)group.current.visible=false;shotsRef.current=[];weapons.current.cancel(charge.current);keys.current.clear();return;}
+  const singularity=scene.scene.getObjectByName("hex-black-hole");
+  if(hudStore?.getSnapshot().singularityUsed&&singularity&&singularity.userData.singularityAge>=4){const pull=singularity.position.clone().sub(s.position),distance=pull.length();if(distance<singularity.userData.singularityReach&&distance>.01)s.velocity.addScaledVector(pull.normalize(),Math.min(delta,.05)*Math.min(18,90/Math.max(1,distance)));}
   crash.current.age+=Math.min(delta,.05);
   if(!active&&crashed.current){crashed.current=false;reset.current=true;}
   if(crashed.current){shotsRef.current=[];weapons.current.cancel(charge.current);keys.current.clear();if(crash.current.age>=2){crashed.current=false;reset.current=true;}else {scene.invalidate();return;}}
@@ -131,7 +144,7 @@ export function PilotSaucer({hudStore,actionRequest=0,type="hexagonal",launchCam
   landing.current.requested=false;
   gearRef.current=active?0:1;suspensionRef.current=0;engineRef.current=active?1:0;
   const input=getFlightInput(keys.current,active);if(active)rimDrive.current=input;
-  stepFlight(s,input,delta,{center:[cx,cy,cz],inner:0,outer:earthRadius?earthRadius*5.51:20});
+  stepFlight(s,input,delta,{center:[cx,cy,cz],inner:0,outer:earthRadius?sceneFlightRadius(earthRadius):20});
   if(active)for(const surface of samplePlanetContacts(scene.scene,s.position,scale*2.3,scene.clock.elapsedTime)){
    const incoming=s.velocity.clone(),impact=resolveSaucerContact(s,surface.point,surface.normal,scale*2.3,surface.velocity);
    if(impact&&impact.speed>.3&&crash.current.age>.45){
@@ -149,10 +162,10 @@ export function PilotSaucer({hudStore,actionRequest=0,type="hexagonal",launchCam
   if(group.current)trackUpRef?.current.set(0,1,0).applyQuaternion(group.current.quaternion);
   if(active||s.velocity.lengthSq()>.00001)scene.invalidate();
  },-1);
- return <><group name="piloted-saucer" ref={group} visible={visible}><UFOModel type={type} gearRef={gearRef} engineRef={engineRef} suspensionRef={suspensionRef} scale={scale} hover={!active&&earthRadius===0} reducedMotion={reducedMotion}/>
+ return <><group name="piloted-saucer" ref={group} visible={visible}><UFOModel propulsionDisabledRef={propulsionDisabled} type={type} gearRef={gearRef} engineRef={engineRef} suspensionRef={suspensionRef} scale={scale} hover={!active&&earthRadius===0} reducedMotion={reducedMotion}/>
  {type==="v3"&&<group scale={scale}><RimPlasma drive={rimDrive} flight={state} ship={group} reducedMotion={reducedMotion}/></group>}
  </group>
  <CrashEffects ship={group} eventRef={crash} reducedMotion={reducedMotion}/>
- <SaucerProjectiles ship={group} shotsRef={shotsRef} charge={charge} weapons={weapons} reducedMotion={reducedMotion} flight={state} active={active} visible={visible} scale={scale}/>
+ <SaucerProjectiles onDamage={hudStore?.addDamage} ship={group} shotsRef={shotsRef} charge={charge} weapons={weapons} reducedMotion={reducedMotion} flight={state} active={active} visible={visible} scale={scale}/>
  </>;
 }

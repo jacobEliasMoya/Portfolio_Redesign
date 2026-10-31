@@ -9,7 +9,6 @@ import { Color, DynamicDrawUsage, FileLoader, InstancedMesh, MathUtils, Object3D
 import { mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { particleRepulsion } from "@/components/three/animation/particle-repulsion.mjs";
-import { getTextOrbitAngle } from "@/components/three/animation/text-orbit.mjs";
 import { easePulse, getPulseStrength } from "@/components/three/animation/letter-pulse.mjs";
 import { smoothIntro } from "@/components/three/animation/loading-intro.mjs";
 import { titleDuration, titleWrapProgress, wrapFormation, wrapPoint } from "@/components/three/animation/wrapped-wordmark.mjs";
@@ -52,13 +51,16 @@ export function ParticleWordmark({ shipPositionRef, piloting, reducedMotion, rep
       return wrapPoint(center[0],center[1],center[2],scale,radius);
     };
     const tourFocus=wordFocus(0,4),spaceFocus=wordFocus(data.text.indexOf("Space"),data.text.length);
-    return { tourFocus,spaceFocus,scatter,shades,angles,radius, scale, ordinal, targets, distances, letters: letters.length, complete: titleDuration(letters.length) };
+    const ys=data.positions.filter((_,i)=>i%3===1);
+    const openingFocus=new Vector3((Math.min(...xs)+Math.max(...xs))*.5*scale,(Math.min(...ys)+Math.max(...ys))*.5*scale+.35,radius-9);
+    const openingWidth=(Math.max(...xs)-Math.min(...xs)+data.cubeSize*2)*scale;
+    return { openingFocus,openingWidth,tourFocus,spaceFocus,scatter,shades,angles,radius, scale, ordinal, targets, distances, letters: letters.length, complete: titleDuration(letters.length) };
   }, [data, size.width, size.height]);
   const mesh = useRef<InstancedMesh>(null), elapsed = useRef(0), pulseTime = useRef(0), done = useRef(false), phase = useRef<IntroPhase | null>(null);
   const destroyed=useDestructibleInstances(mesh,{blast:.35,padding:.15,dynamic:true,mode:"explode"});
   const earthBurst=useRef(false);
   const orbitDrag=useRef({active:false,target:0,value:0,angle:0});
-  const orbitTime = useRef(0), targetBuffer=useRef([0,0,0]);
+  const targetBuffer=useRef([0,0,0]);
   const repels=useRef(new Float32Array(data.scales.length*3)),repelTarget=useRef([0,0,0]);
   const strengths = useRef(new Float32Array(data.scales.length)), pulls = useRef(new Float32Array(data.scales.length * 3));
   const cursor = useRef({ x: 0, y: 0, active: false });
@@ -69,9 +71,10 @@ export function ParticleWordmark({ shipPositionRef, piloting, reducedMotion, rep
   }, [data.cubeSize]);
   useEffect(()=>{mesh.current?.instanceMatrix.setUsage(DynamicDrawUsage);},[]);
   useEffect(()=>{const object=mesh.current;if(!object)return;object.userData.tourFocus=objects.tourFocus;object.userData.tourSpaceFocus=objects.spaceFocus;return()=>{delete object.userData.tourFocus;delete object.userData.tourSpaceFocus;};},[objects]);
+  useEffect(()=>{const object=mesh.current;if(!object)return;object.userData.openingFocus=layout.openingFocus;object.userData.openingWidth=layout.openingWidth;return()=>{delete object.userData.openingFocus;delete object.userData.openingWidth;};},[layout]);
   useEffect(() => () => geometry.dispose(), [geometry]);
   useEffect(() => { onPrepared(); }, [onPrepared]);
-  useEffect(() => { elapsed.current = 0; pulseTime.current = 0; orbitTime.current = 0;orbitDrag.current={active:false,target:0,value:0,angle:0}; done.current = false; phase.current = null; strengths.current.fill(0); pulls.current.fill(0); repels.current.fill(0); invalidate(); }, [replay, invalidate]);
+  useEffect(() => { elapsed.current = 0; pulseTime.current = 0;orbitDrag.current={active:false,target:0,value:0,angle:0}; done.current = false; phase.current = null; strengths.current.fill(0); pulls.current.fill(0); repels.current.fill(0); invalidate(); }, [replay, invalidate]);
   useEffect(() => {
     const move = (e: PointerEvent) => {
       const b = canvas.getBoundingClientRect();
@@ -111,9 +114,9 @@ export function ParticleWordmark({ shipPositionRef, piloting, reducedMotion, rep
     const currentPhase: IntroPhase = ready ? "ready" : formed ? "waiting" : "loading";
     if (phase.current !== currentPhase) { phase.current = currentPhase; onPhaseChange(currentPhase); }
     objects.screen.set(cursor.current.x, cursor.current.y); objects.ray.setFromCamera(objects.screen, camera);
-    if (done.current) { pulseTime.current += dt; if (!reducedMotion&&!orbitDrag.current.active) orbitTime.current += dt; }
+    if (done.current) pulseTime.current += dt;
     orbitDrag.current.value=reducedMotion?orbitDrag.current.target:MathUtils.damp(orbitDrag.current.value,orbitDrag.current.target,18,dt);
-    const orbitAngle = getTextOrbitAngle(orbitTime.current)+orbitDrag.current.value, orbitCos=Math.cos(orbitAngle), orbitSin=Math.sin(orbitAngle);
+    const orbitAngle = orbitDrag.current.value, orbitCos=Math.cos(orbitAngle), orbitSin=Math.sin(orbitAngle);
     objects.tourFocus.set(layout.tourFocus[0]*orbitCos+(layout.tourFocus[2]+9)*orbitSin,layout.tourFocus[1],-layout.tourFocus[0]*orbitSin+(layout.tourFocus[2]+9)*orbitCos-9);
     objects.spaceFocus.set(layout.spaceFocus[0]*orbitCos+(layout.spaceFocus[2]+9)*orbitSin,layout.spaceFocus[1],-layout.spaceFocus[0]*orbitSin+(layout.spaceFocus[2]+9)*orbitCos-9);
     const magnetic=ready&&!reducedMotion&&!orbitDrag.current.active&&cursor.current.active;

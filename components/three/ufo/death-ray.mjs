@@ -7,7 +7,7 @@ export function createDeathRay(){return {active:false,held:false,age:0,releaseAg
 export const deathRayActive=ray=>ray.active;
 export function cancelDeathRay(ray){ray.active=false;ray.held=false;ray.releaseAge=DEATH_RAY_FADE_SECONDS;ray.length=0;ray.hit=false;}
 /** No charging: input starts a full-length beam immediately and release stops damage immediately. */
-export function stepDeathRay(ray,delta,origin,rotation,targets,now,held){
+export function stepDeathRay(ray,delta,origin,rotation,targets,now,held,onDamage){
  const dt=Math.max(0,Math.min(.1,delta));
  if(!held){
   ray.held=false;if(!ray.active)return false;
@@ -19,7 +19,7 @@ export function stepDeathRay(ray,delta,origin,rotation,targets,now,held){
  const hit=firstProjectileHit(targets,ray.origin,ray.end,now);ray.hit=!!hit;
  if(hit){
   ray.end.copy(hit.point);
-  if(ray.age+1e-9>=ray.nextDamage){hit.destroy(DEATH_RAY_HIT_POWER);ray.nextDamage+=DEATH_RAY_HIT_INTERVAL;if(ray.nextDamage<=ray.age)ray.nextDamage=ray.age+DEATH_RAY_HIT_INTERVAL;}
+  if(ray.age+1e-9>=ray.nextDamage){hit.destroy(DEATH_RAY_HIT_POWER,onDamage);ray.nextDamage+=DEATH_RAY_HIT_INTERVAL;if(ray.nextDamage<=ray.age)ray.nextDamage=ray.age+DEATH_RAY_HIT_INTERVAL;}
  }
  ray.length=ray.origin.distanceTo(ray.end);return true;
 }

@@ -1,4 +1,5 @@
 import {Box3,Float32BufferAttribute,Group,Mesh,MeshBasicMaterial,SphereGeometry,Vector3} from "three";
+import {createAtomBomb} from "../black-hole/atom-bomb.mjs";
 import {createBlasterEnvelope,createBlasterMaterial} from "./plasma-visual.mjs";
 import {createDeathRay} from "./death-ray.mjs";
 import {createDeathRayModel,updateDeathRayModel} from "./death-ray-model.mjs";
@@ -6,7 +7,7 @@ import {createDeathRayModel,updateDeathRayModel} from "./death-ray-model.mjs";
 /** Miniatures of the actual gameplay volumes, in the existing foreground scene.
  * These own their GPU resources and never register collisions or firing state. */
 export function createHudWeaponModel(weapon){
- if(weapon!=="bolts"&&weapon!=="death-ray")throw new Error(`No model for weapon ${weapon}`);
+ if(weapon!=="bolts"&&weapon!=="death-ray"&&weapon!=="singularity")throw new Error(`No model for weapon ${weapon}`);
  const root=new Group(),art=new Group();root.add(art);art.rotation.set(0,Math.PI/2,.28);
  let dispose,rayModel=null;
  if(weapon==="bolts"){
@@ -15,6 +16,7 @@ export function createHudWeaponModel(weapon){
   const shell=new Mesh(geometry,material),coreGeometry=new SphereGeometry(1,8,6),coreMaterial=new MeshBasicMaterial({color:"#e6f7ff",toneMapped:false}),core=new Mesh(coreGeometry,coreMaterial);
   core.scale.set(.045,.045,.66);core.position.z=.1;art.add(shell,core);
   dispose=()=>{geometry.dispose();material.dispose();coreGeometry.dispose();coreMaterial.dispose();};
+ }else if(weapon==="singularity"){const bomb=createAtomBomb();art.add(bomb.root);dispose=()=>bomb.dispose();
  }else{
   rayModel=createDeathRayModel();const ray=createDeathRay();
   ray.active=true;ray.held=true;ray.releaseAge=0;ray.length=4;

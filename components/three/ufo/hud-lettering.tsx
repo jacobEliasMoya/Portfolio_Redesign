@@ -11,8 +11,11 @@ import {GuideBoard} from "./guide-board";
 import {WEAPON_SLOTS,type WeaponId} from "./weapon-selection.mjs";
 import {createHudWeaponModel,layoutHudWeaponModel,stepHudWeaponModel} from "./hud-weapon-model.mjs";
 import {createWeaponNoticeModel,resetWeaponNoticeModel,updateWeaponNoticeModel,WEAPON_NOTICE_SECONDS} from "./weapon-notice-model.mjs";
+import {createScoreReels,updateScoreReels} from "./score-reels.mjs";
+import {applyHudFlip,HUD_FLIP_OUT_MS} from "./hud-flip.mjs";
 
-type Label={id:string;text:string;x:number;y:number;width:number;height:number;fontSize:number;color:string;opacity:number};
+const flipGroups=new WeakMap<HTMLElement,{id:string;enteredAt:number}>();let flipSerial=0;
+type Label={id:string;text:string;kind?:"score";flip?:boolean;flipGroup?:string;pivotY?:number;enteredAt?:number;departedAt?:number;x:number;y:number;width:number;height:number;fontSize:number;color:string;opacity:number};
 type WeaponIcon={id:string;weapon:WeaponId;x:number;y:number;width:number;height:number};
 type WeaponNotice=WeaponIcon&{fontSize:number;startedAt:number};
 export function createHudLetteringStore(){
@@ -25,8 +28,12 @@ export function createHudLetteringStore(){
   getSnapshot:()=>labels,getIcons:()=>icons,getNotice:()=>notice,getReady:()=>ready,
   subscribe(callback:()=>void){listeners.add(callback);return()=>{listeners.delete(callback);};},
   presented(value:boolean){if(ready===value)return;ready=value;notify();},
-  update(label:Label){const existing=labels.find(item=>item.id===label.id);if(existing&&Object.keys(label).every(key=>existing[key as keyof Label]===label[key as keyof Label]))return;labels=[...labels.filter(item=>item.id!==label.id),label];notify();},
-  remove(id:string){if(!labels.some(item=>item.id===id))return;labels=labels.filter(item=>item.id!==id);notify();},
+  update(label:Label){const existing=labels.find(item=>item.id===label.id);if(existing&&existing.departedAt===undefined&&Object.keys(label).every(key=>existing[key as keyof Label]===label[key as keyof Label]))return;labels=[...labels.filter(item=>item.id!==label.id),{...label,enteredAt:label.enteredAt??existing?.enteredAt??performance.now()}];notify();},
+  remove(id:string){const existing=labels.find(item=>item.id===id);if(!existing)return;
+   if(existing.flip){if(existing.departedAt!==undefined)return;const departedAt=performance.now(),sameGroup=(item:Label)=>existing.flipGroup?item.flipGroup===existing.flipGroup:item.id===id;
+    labels=labels.map(item=>sameGroup(item)?{...item,departedAt}:item);notify();
+    window.setTimeout(()=>{if(!labels.some(item=>sameGroup(item)&&item.departedAt===departedAt))return;labels=labels.filter(item=>!(sameGroup(item)&&item.departedAt===departedAt));notify();},HUD_FLIP_OUT_MS+20);
+   }else {labels=labels.filter(item=>item.id!==id);notify();}},
   updateIcon(icon:WeaponIcon){const existing=icons.find(item=>item.id===icon.id);if(existing&&Object.keys(icon).every(key=>existing[key as keyof WeaponIcon]===icon[key as keyof WeaponIcon]))return;icons=[...icons.filter(item=>item.id!==icon.id),icon];notify();},
   removeIcon(id:string){if(!icons.some(item=>item.id===id))return;icons=icons.filter(item=>item.id!==id);notify();},
   updateNotice(next:WeaponNotice){if(notice&&Object.keys(next).every(key=>notice![key as keyof WeaponNotice]===next[key as keyof WeaponNotice]))return;notice=next;notify();},
@@ -50,7 +57,7 @@ export function useHudGuideBoard(){
 }
 
 /** Accessible HTML reserves layout and button hit areas; visible letters are live meshes. */
-export function HudLabel({text}:{text:string}){
+export function HudLabel({text,kind,flip=false}:{text:string;kind?:"score";flip?:boolean}){
  const store=useContext(LetteringContext),element=useRef<HTMLSpanElement>(null),id=useId();
  const ready=useSyncExternalStore(store?.subscribe??subscribeNothing,store?.getReady??neverReady,neverReady);
  useLayoutEffect(()=>{
@@ -62,7 +69,10 @@ export function HudLabel({text}:{text:string}){
    if(!rect.width||!text.trim()){store.remove(id);return;}
    let opacity=1;
    for(let node:HTMLElement|null=span;node;node=node.parentElement)opacity*=Number(getComputedStyle(node).opacity);
-   store.update({id,text,x:rect.left,y:rect.top,width:rect.width,height:rect.height,fontSize:parseFloat(style.fontSize),color:style.color,opacity});
+   const group=flip?span.closest<HTMLElement>("[data-hud-flip]"):null;
+   if(group&&!flipGroups.has(group))flipGroups.set(group,{id:`header-flip-${++flipSerial}`,enteredAt:performance.now()});
+   const timing=group?flipGroups.get(group):undefined,bounds=group?.getBoundingClientRect();
+   store.update({id,text,kind,flip,flipGroup:timing?.id,enteredAt:timing?.enteredAt,pivotY:bounds?bounds.top+bounds.height/2:undefined,x:rect.left,y:rect.top,width:rect.width,height:rect.height,fontSize:parseFloat(style.fontSize),color:style.color,opacity});
   };
   const schedule=()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(measure);};
   const owner=span.closest("button")??span;
@@ -71,8 +81,8 @@ export function HudLabel({text}:{text:string}){
   for(const event of ["pointerenter","pointerleave","focus","blur"])owner.addEventListener(event,schedule);
   window.addEventListener("resize",schedule);window.addEventListener("scroll",schedule,true);document.fonts.ready.then(schedule);measure();
   return()=>{stopped=true;cancelAnimationFrame(frame);resize.disconnect();attributes.disconnect();window.removeEventListener("resize",schedule);window.removeEventListener("scroll",schedule,true);for(const event of ["pointerenter","pointerleave","focus","blur"])owner.removeEventListener(event,schedule);store.remove(id);};
- },[id,text,store]);
- return <span ref={element} style={{display:"inline-block",position:"relative",width:`${hudTextAdvance(parsedFont,text)}em`,height:"1em",lineHeight:1,whiteSpace:"pre",pointerEvents:"none"}}><span style={{opacity:ready?0:1}}>{text}</span></span>;
+ },[id,text,kind,flip,store]);
+ return <span ref={element} style={{display:"inline-block",position:"relative",width:`${kind==="score"?hudTextAdvance(parsedFont,"SCORE: ")+text.slice(7).length*Math.max(...Array.from({length:10},(_,i)=>hudTextAdvance(parsedFont,String(i)))):hudTextAdvance(parsedFont,text)}em`,height:"1em",lineHeight:1,whiteSpace:"pre",pointerEvents:"none"}}><span style={{opacity:ready?0:1}}>{text}</span></span>;
 }
 
 /** Native slot reserves space; the shared foreground renderer draws its volume. */
@@ -124,12 +134,12 @@ export function HudWeaponNotice({weapon}:{weapon:WeaponId}){
 
 function LiveWeaponNotice({store,reducedMotion}:{store:LetteringStore;reducedMotion:boolean}){
  const notice=useSyncExternalStore(store.subscribe,store.getNotice,store.getNotice),{gl,size,invalidate}=useThree();
- const models=useMemo(()=>({bolts:createWeaponNoticeModel(parsedFont,WEAPON_SLOTS[0].label),"death-ray":createWeaponNoticeModel(parsedFont,WEAPON_SLOTS[1].label,{color:"#ff6b54"})}),[]);
+ const models=useMemo(()=>({bolts:createWeaponNoticeModel(parsedFont,WEAPON_SLOTS[0].label),singularity:createWeaponNoticeModel(parsedFont,WEAPON_SLOTS[2].label,{color:"#e6ac60"}),"death-ray":createWeaponNoticeModel(parsedFont,WEAPON_SLOTS[1].label,{color:"#ff6b54"})}),[]);
  const serial=useRef<number|null>(null);
  const viewport=useMemo(()=>{const rect=gl.domElement.getBoundingClientRect();return {left:rect.left,top:rect.top,width:size.width,height:size.height};},[gl,size.width,size.height]);
- useEffect(()=>()=>{models.bolts.dispose();models["death-ray"].dispose();},[models]);
+ useEffect(()=>()=>{models.singularity.dispose();models.bolts.dispose();models["death-ray"].dispose();},[models]);
  useFrame(()=>{
-  updateWeaponNoticeModel(models.bolts,-1,reducedMotion);updateWeaponNoticeModel(models["death-ray"],-1,reducedMotion);if(!notice)return;
+  updateWeaponNoticeModel(models.singularity,-1,reducedMotion);updateWeaponNoticeModel(models.bolts,-1,reducedMotion);updateWeaponNoticeModel(models["death-ray"],-1,reducedMotion);if(!notice)return;
   const model=models[notice.weapon];
   if(serial.current!==notice.startedAt){resetWeaponNoticeModel(model);serial.current=notice.startedAt;}
   model.root.position.set(notice.x-viewport.left+notice.width/2-viewport.width/2,viewport.height/2-(notice.y-viewport.top+notice.height/2),0);
@@ -137,19 +147,32 @@ function LiveWeaponNotice({store,reducedMotion}:{store:LetteringStore;reducedMot
   const alive=updateWeaponNoticeModel(model,(performance.now()-notice.startedAt)/1000,reducedMotion);
   if(alive&&!reducedMotion)invalidate();
  });
- return <><primitive object={models.bolts.root} dispose={null}/><primitive object={models["death-ray"].root} dispose={null}/></>;
+ return <><primitive object={models.singularity.root} dispose={null}/><primitive object={models.bolts.root} dispose={null}/><primitive object={models["death-ray"].root} dispose={null}/></>;
 }
 
 type Resources=ReturnType<typeof createHudLetterResources>;
+function LiveScore({label,resources,reducedMotion}:{label:Label;resources:Resources;reducedMotion:boolean}){
+ const {size,gl,invalidate}=useThree(),digits=label.text.slice(7).length;
+ const model=useMemo(()=>createScoreReels(resources,digits,{color:label.color,opacity:label.opacity}),[resources,digits,label.color,label.opacity]);
+ useEffect(()=>()=>model.dispose(),[model]);
+ useFrame((_,delta)=>{
+  const rect=gl.domElement.getBoundingClientRect(),y=size.height/2-(label.y-rect.top+label.height/2);
+  model.root.position.set(label.x-rect.left-size.width/2,y,0);model.root.scale.setScalar(label.fontSize);
+  if(applyHudFlip(model.root,performance.now(),label.enteredAt??0,label.departedAt,reducedMotion,size.height/2-((label.pivotY??label.y+label.height/2)-rect.top)))invalidate();
+  if(updateScoreReels(model,Number(label.text.slice(7)),delta,reducedMotion))invalidate();
+ });
+ return <primitive object={model.root} dispose={null}/>;
+}
 type Pointer={x:number;y:number;active:boolean};
 function LiveLabel({label,resources,pointer,reducedMotion}:{label:Label;resources:Resources;pointer:RefObject<Pointer>;reducedMotion:boolean}){
- const {size,gl}=useThree();
+ const {size,gl,invalidate}=useThree();
  const model=useMemo(()=>createHudLetterModel(resources,label.text,{fontSize:label.fontSize,color:label.color,opacity:label.opacity}),[resources,label.text,label.fontSize,label.color,label.opacity]);
  const origin=useMemo(()=>({x:label.x,y:label.y+label.height/2}),[label.x,label.y,label.height]);
  const rect=useMemo(()=>{const bounds=gl.domElement.getBoundingClientRect();return {left:bounds.left,top:bounds.top,width:size.width,height:size.height};},[gl,size.width,size.height]);
  useFrame((state,delta)=>{
   model.position.set(label.x-rect.left-size.width/2,size.height/2-(label.y-rect.top+label.height/2),0);
-  stepHudLetterModel(model,{elapsed:state.clock.elapsedTime,delta,pointer:pointer.current,origin,reducedMotion});
+  const flipping=label.flip&&applyHudFlip(model,performance.now(),label.enteredAt??0,label.departedAt,reducedMotion,size.height/2-((label.pivotY??label.y+label.height/2)-rect.top));if(flipping)invalidate();
+  stepHudLetterModel(model,{elapsed:state.clock.elapsedTime,delta,pointer:pointer.current,origin,reducedMotion:reducedMotion||!!flipping});
  });
  return <primitive object={model} dispose={null}/>;
 }
@@ -170,7 +193,7 @@ function LiveLetterScene({store,reducedMotion}:{store:LetteringStore;reducedMoti
   return()=>{window.removeEventListener("pointermove",move);window.removeEventListener("blur",leave);document.documentElement.removeEventListener("pointerleave",leave);canvas.removeEventListener("webglcontextlost",lost);canvas.removeEventListener("webglcontextrestored",restore);detach();};
  },[gl,scene,store,invalidate]);
  useFrame(()=>{if(document.querySelector("dialog[open]"))pointer.current.active=false;if(!reducedMotion)invalidate();});
- return <><ambientLight intensity={1.1}/><directionalLight position={[-200,300,400]} intensity={2.4}/><directionalLight position={[200,-100,100]} intensity={.6}/>{labels.map(label=><LiveLabel key={label.id} label={label} resources={resources} pointer={pointer} reducedMotion={reducedMotion}/>)}<LiveWeaponIcons store={store} reducedMotion={reducedMotion}/><LiveWeaponNotice store={store} reducedMotion={reducedMotion}/><GuideBoard board={store.guide}/></>;
+ return <><ambientLight intensity={1.1}/><directionalLight position={[-200,300,400]} intensity={2.4}/><directionalLight position={[200,-100,100]} intensity={.6}/>{labels.map(label=>label.kind==="score"?<LiveScore key={label.id} label={label} resources={resources} reducedMotion={reducedMotion}/>:<LiveLabel key={label.id} label={label} resources={resources} pointer={pointer} reducedMotion={reducedMotion}/>)}<LiveWeaponIcons store={store} reducedMotion={reducedMotion}/><LiveWeaponNotice store={store} reducedMotion={reducedMotion}/><GuideBoard board={store.guide}/></>;
 }
 
 class LetteringBoundary extends Component<{store:LetteringStore;children:ReactNode},{failed:boolean}>{
@@ -183,5 +206,5 @@ class LetteringBoundary extends Component<{store:LetteringStore;children:ReactNo
 /** Dedicated transparent foreground scene: real lit meshes at crisp resolution,
  * independent of the heavy world's adaptive DPR. No glyph images or readbacks. */
 export function HudLetteringLayer({store,reducedMotion=false}:{store:LetteringStore;reducedMotion?:boolean}){
- return <LetteringBoundary store={store}><div aria-hidden="true" style={{position:"absolute",inset:0,zIndex:4,pointerEvents:"none"}}><Canvas orthographic camera={{position:[0,0,500],near:.1,far:1000,zoom:1}} dpr={[1.5,2]} frameloop="demand" gl={{alpha:true,antialias:true}} style={{pointerEvents:"none"}} fallback={null}><LiveLetterScene store={store} reducedMotion={reducedMotion}/></Canvas></div></LetteringBoundary>;
+ return <LetteringBoundary store={store}><div aria-hidden="true" style={{position:"absolute",inset:0,zIndex:4,pointerEvents:"none"}}><Canvas orthographic camera={{position:[0,0,500],near:.1,far:1000,zoom:1}} dpr={[1.5,2]} frameloop="demand" gl={{alpha:true,antialias:true,localClippingEnabled:true}} style={{pointerEvents:"none"}} fallback={null}><LiveLetterScene store={store} reducedMotion={reducedMotion}/></Canvas></div></LetteringBoundary>;
 }

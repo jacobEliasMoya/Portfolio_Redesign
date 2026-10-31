@@ -49,6 +49,7 @@
 .slotCharge i {display:block;background:#17333e;}
 .slotCharge i[data-lit="true"] {background:var(--cyan);}
 .destinations {display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:clamp(8px,1.4vw,24px);}
+.score {margin-left:auto;font-size:clamp(20px,2vw,28px);line-height:1.4;color:var(--cyan);white-space:nowrap;}
 .destinations button {position:relative;padding:10px 4px;white-space:nowrap;font-size:22px;color:#c4ceca;}
 .destinations [aria-current] {color:var(--cyan);}
 .destinations [aria-current]::after {content:"";position:absolute;bottom:1px;left:4px;right:4px;height:2px;background:var(--cyan);}
@@ -129,3 +130,6 @@
  .top {top:max(10px,env(safe-area-inset-top));}.bottom {bottom:max(14px,env(safe-area-inset-bottom));}
  .ship {width:40px;height:26px;}.shipStatus {min-height:30px;}.pilot {gap:8px;}
 }
+
+.rocketNotice {position:absolute;top:max(90px,calc(env(safe-area-inset-top) + 80px));left:50%;transform:translateX(-50%);font-size:clamp(12px,1.3vw,18px);line-height:1.4;text-align:center;pointer-events:none;}
+@media(max-width:540px){.rocketNotice{top:124px;}}

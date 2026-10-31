@@ -91,8 +91,8 @@ export function BlockMoon({ radius = .82, rotation = [0,0,0], reducedMotion=fals
 }
 
 /** The same orbital phase drives position and yaw: exactly one spin per revolution. */
-export function OrbitingMoon({ earthRadius, enabled, reducedMotion, draggable=false, center = [0,.35,-9],gravity=true,gravityPower=1,explosionsEnabled=false }: {
-  earthRadius: number; enabled: boolean; reducedMotion: boolean; draggable?:boolean; center?: [number,number,number];gravity?:boolean;gravityPower?:number;explosionsEnabled?:boolean;
+export function OrbitingMoon({ earthRadius, enabled, reducedMotion, autoOrbit=true, draggable=false, center = [0,.35,-9],gravity=true,gravityPower=1,explosionsEnabled=false }: {
+  earthRadius: number; enabled: boolean; reducedMotion: boolean; autoOrbit?:boolean; draggable?:boolean; center?: [number,number,number];gravity?:boolean;gravityPower?:number;explosionsEnabled?:boolean;
 }) {
   const group = useRef<Group>(null), reveal = useRef<Group>(null), elapsed = useRef(0), amount = useRef(0);
   const released=useRef<ReturnType<typeof releaseMoon>|null>(null);
@@ -101,21 +101,21 @@ export function OrbitingMoon({ earthRadius, enabled, reducedMotion, draggable=fa
   const initial = getMoonOrbitPose(0,distance);
   useFrame((state,delta)=>{
     const dt=Math.min(delta,.1);
-    if(!released.current&&enabled)state.scene.traverse(object=>{
+    if(autoOrbit&&!released.current&&enabled)state.scene.traverse(object=>{
       const target=getProjectileTarget(object),phase=target?.foundation>2?target.planetPhase():"intact";
       if(!released.current&&(phase==="exploding"||phase==="gone"))released.current=releaseMoon(elapsed.current,distance);
     });
     if(released.current){
-      if(enabled&&!reducedMotion)advanceFreeMoon(released.current,dt);
+      if(autoOrbit&&enabled&&!reducedMotion)advanceFreeMoon(released.current,dt);
       if(group.current){group.current.position.set(...released.current.position as [number,number,number]);group.current.rotation.set(...released.current.rotation as [number,number,number]);}
     }else{
-      if(enabled&&!reducedMotion)elapsed.current+=dt;
+      if(autoOrbit&&enabled&&!reducedMotion)elapsed.current+=dt;
       const pose=getMoonOrbitPose(elapsed.current,distance);
       if(group.current){group.current.position.set(...pose.position as [number,number,number]);group.current.rotation.y=pose.yaw;}
     }
     amount.current=reducedMotion?Number(enabled):MathUtils.damp(amount.current,Number(enabled),2,dt);
     if(reveal.current){reveal.current.scale.setScalar(amount.current);reveal.current.visible=amount.current>.001;}
-    if((enabled&&!reducedMotion)||Math.abs(amount.current-Number(enabled))>.001)state.invalidate();
+    if((autoOrbit&&enabled&&!reducedMotion)||Math.abs(amount.current-Number(enabled))>.001)state.invalidate();
   },-2);
   return <group position={center} rotation={[MOON_ORBIT.inclination,0,MOON_ORBIT.node]}>
     <group ref={group} position={initial.position as [number,number,number]} rotation={[0,initial.yaw,0]}>

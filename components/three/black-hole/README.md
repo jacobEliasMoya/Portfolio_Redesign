@@ -1,5 +1,7 @@
 # Matte hex black hole
 
+Current live-scene gameplay (2026-10-31): slot 3 unlocks above 6,767 points and fires the atom-bomb model from the UFO cannon. A swept collision creates the wide-disc V2 matte black hole with light bending at impact; misses expire after six seconds. Nearby geometry immediately spirals in; UFO immunity lasts four seconds after impact. Crossing the visible core then permanently disables propulsion and locks the observation camera onto the black hole until Reset Universe. Finite suction reach and the expanded 156-unit desktop flight boundary allow escape. Reset Universe restores the scene. See docs/current-scene.md for the authoritative current checkpoint; earlier preview-only notes below are historical.
+
 Based on the user-corrected concept docs/references/black-hole/hex-black-hole-concept-v5-tiled-sphere.png: the CENTRAL SPHERE itself is paneled like Earth, not a smooth black void. User requested black/matte panels, smaller disc fragments, controlled chaos and fast orbit. Apply the repository reference-3d-modeling skill.
 
 ## Construction and dimensions

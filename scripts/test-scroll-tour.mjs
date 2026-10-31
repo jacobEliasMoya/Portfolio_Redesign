@@ -24,16 +24,31 @@ test("wheel directions retrace the tour and normalize line/page deltas",()=>{
  assert.equal(wheelTourProgress(0,2,1),wheelTourProgress(0,32));assert.equal(wheelTourProgress(1,100),1);assert.equal(wheelTourProgress(0,-100),0);
 });
 
-test("opening view follows behind the Moon looking inward at Earth, then scroll visits Jake",()=>{
+test("opening remains level with Earth as Moon landmarks move",()=>{
  const tour=createScrollTour(),anchors=createTourAnchors();
- let previous=tour.sample(0,anchors).position.clone();
+ const original=tour.sample(0,anchors).position.clone();
  for(let i=0;i<10;i++){
   anchors.moon.x+=1;anchors.moon.z+=2;
-  const opening=tour.sample(0,anchors),outward=anchors.moon.clone().sub(anchors.earthCenter),behind=opening.position.clone().sub(anchors.moon);
-  assert.ok(behind.dot(outward)>0,"camera must be outside the Moon's orbit looking inward");
-  assert.ok(behind.length()>=Math.max(9,anchors.moonRadius*5)*.8);assert.ok(opening.target.equals(anchors.earthCenter));
-  assert.ok(opening.position.distanceTo(previous)>.1);previous.copy(opening.position);
+  const opening=tour.sample(0,anchors);
+  assert.ok(Math.abs(opening.position.x-anchors.earthCenter.x)<1e-9);
+  assert.ok(Math.abs(opening.position.y-anchors.earthCenter.y)<1e-9);
+  assert.ok(opening.target.equals(anchors.earthCenter));
+  assert.ok(opening.position.distanceTo(original)<1e-9,"Moon placement must not move the starting camera");
  }
- assert.ok(tour.sample(.01,anchors).position.distanceTo(previous)>0);
- assert.ok(tour.sample(.25,anchors).target.equals(anchors.jake));assert.equal(stepTourStops(.25,-1),0);
+ assert.ok(tour.sample(.25,anchors).target.equals(anchors.jake));
+});
+test("title-led opening targets lettering and fits the full name across viewport widths",()=>{
+ const tour=createScrollTour();
+ for(const aspect of [16/9,1,.5]){
+  const anchors=createTourAnchors();anchors.aspect=aspect;anchors.overviewWidth=18;
+  anchors.overview.set(0,1.2,1.55);
+  anchors.overviewOrigin=anchors.moon.clone();anchors.overviewOrigin.y+=anchors.moonRadius*2.1;
+  const view=tour.sample(0,anchors);
+  assert.equal(view.target.x,anchors.earthCenter.x); assert.equal(view.target.y,anchors.earthCenter.y); assert.equal(view.target.z,anchors.overview.z); assert.ok(view.position.clone().sub(view.target).normalize().distanceTo({x:0,y:0,z:1})<1e-9);
+  assert.ok(!view.target.equals(anchors.earthCenter));
+  const visibleWidth=2*view.position.distanceTo(view.target)*Math.tan(20*Math.PI/180)*aspect;
+  assert.ok(visibleWidth*.78>=anchors.overviewWidth-1e-8,"complete flat title has horizontal breathing room");
+  const forward=view.target.clone().sub(view.position).normalize(),right=forward.clone().cross({x:0,y:1,z:0}).normalize(),screenUp=right.cross(forward);
+  assert.ok(anchors.moon.clone().sub(view.position).dot(screenUp)<0,"Moon stays below the title in camera space");
+ }
 });

@@ -1,5 +1,15 @@
 # Performance checkpoint
 
+## 2026-10-31 death-ray CPU optimization
+
+Confirmed two costs using the real 20,921-tile Earth and 3,242-tile Moon fixtures: collision queries sampled the whole 80-unit ray through empty grid space every frame; crater stamping decomposed every tile and reapplied the complete impact history to every tile/corner and underlying surface on each 0.2-second tick. These are CPU costs, independent of graphics-card power.
+
+`node scripts/audit-death-ray.mjs` reproduces 100 long-segment queries and 40 successive damage stamps per body, with the spatial index prepared and whole-body explosions disabled. Initial baseline query medians were Earth 3.93ms / Moon 4.28ms; damage medians were 7.10ms / 13.25ms. Representative optimized query medians are about 0.5–0.8ms, damage medians about 1.2–1.3ms / 6.2–6.6ms. Timings vary with warm-up, GC and other activity. First stamps remain more expensive. These are Node CPU measurements, not GPU timings or a browser FPS guarantee.
+
+Collision grid searches now clip traversal to a conservative target sphere while retaining the original segment for exact contact time/point tests. Candidate sets and clipping vectors are reused. Bounds expand when crater relocation raises terrain. Craters cache immutable directions/extents in the existing chunked preparation tasks, reject tiles/surface vertices outside the new influence region before decomposing/deforming, reject distant historical marks before square roots, and reuse slope scratch vectors. Actual geometry, slope response, damage cadence, score and effects are preserved; no ray resolution, damage or visual-quality reduction.
+
+Compared final buffers against the original committed crater implementation after 24 overlapping/disjoint stamps on both real assets: matrices, foundation, lunar skin and fitted corners match within 1e-5. All 219 regression tests, lint and production build pass. Live browser four-second held-ray check applied damage and reached 4,200 points. Sustained browser frame-time traces, real gaming-machine reproduction and GPU profiling remain unmeasured. Remaining crater work still grows with local impact history and includes full surface-normal updates; this pass does not claim every possible long-session stall is eliminated.
+
 ## 2026-10-29 resource/idle-work audit
 
 RimPlasma's explicitly owned meshes now receive dispose events, releasing instanceMatrix GPU bindings as well as shared geometry/materials. Idle rim/projectile effects stop instance-buffer uploads. Flight axes, chase pose/clearance and collision target arrays reuse scratch storage; weak scratch keys do not keep removed craft/camera positions alive.

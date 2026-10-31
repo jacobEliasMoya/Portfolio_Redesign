@@ -1,7 +1,9 @@
 import {AdditiveBlending,DynamicDrawUsage,InstancedBufferAttribute,LatheGeometry,ShaderMaterial,Vector2} from "three";
 export const RIM_PORT_COUNT=6,RIM_BURST_LAYERS=3;
 export const IDLE_RIM_DRIVE=Object.freeze({thrust:0,strafe:0,roll:0,lift:0,turn:0,pitch:0,brake:false});
+export const OFFLINE_RIM_DRIVE=Object.freeze({...IDLE_RIM_DRIVE,disabled:true});
 export function shouldUpdateRimPlasma(input,levels){
+ if(input.disabled)return false;
  return !!(input.thrust||input.strafe||input.roll||input.lift||input.turn||input.pitch||input.brake)||levels.some(level=>level>.008);
 }
 /** Shortest-arc, frame-rate-independent easing when another control changes jet direction. */

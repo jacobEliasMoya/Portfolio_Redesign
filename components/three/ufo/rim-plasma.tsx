@@ -4,7 +4,7 @@ import {useFrame} from "@react-three/fiber";
 import {DynamicDrawUsage,Group,InstancedMesh,Object3D,Quaternion,ShaderMaterial,Vector3} from "three";
 import {createRimBurstResources,easeRimDirection,RIM_BURST_LAYERS,RIM_PORT_COUNT,sampleRimDrive,shouldUpdateRimPlasma} from "./rim-plasma.mjs";
 
-export function RimPlasma({drive,flight,ship,reducedMotion}:{drive:RefObject<{thrust:number;strafe:number;roll?:number;lift:number;turn:number;pitch:number;brake:boolean}>;flight:RefObject<{velocity:Vector3}>;ship:RefObject<Group|null>;reducedMotion:boolean}){
+export function RimPlasma({drive,flight,ship,reducedMotion}:{drive:RefObject<{thrust:number;strafe:number;roll?:number;lift:number;turn:number;pitch:number;brake:boolean;disabled?:boolean}>;flight:RefObject<{velocity:Vector3}>;ship:RefObject<Group|null>;reducedMotion:boolean}){
  const shell=useRef<InstancedMesh>(null),core=useRef<InstancedMesh>(null),clock=useRef(0),levels=useRef(new Float32Array(RIM_PORT_COUNT));
  const directions=useRef(Array.from({length:RIM_PORT_COUNT},(_,i)=>new Quaternion().setFromAxisAngle(new Vector3(0,1,0),Math.PI/2-(Math.PI/6+i*Math.PI/3))));
  const resources=useMemo(()=>createRimBurstResources(),[]);
@@ -16,6 +16,7 @@ export function RimPlasma({drive,flight,ship,reducedMotion}:{drive:RefObject<{th
  },[resources]);
  useFrame((state,delta)=>{
   if(!shell.current||!core.current||!ship.current)return;
+  if(drive.current.disabled){levels.current.fill(0);shell.current.visible=false;core.current.visible=false;return;}
   if(!shouldUpdateRimPlasma(drive.current,levels.current)){shell.current.visible=false;core.current.visible=false;return;}
   const dt=Math.min(.1,Math.max(0,delta)),{transform,direction,forward,velocity,rotation,sample}=scratch;
   ship.current.getWorldQuaternion(rotation);velocity.copy(flight.current.velocity).applyQuaternion(rotation.invert());

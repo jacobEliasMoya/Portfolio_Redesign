@@ -15,7 +15,15 @@ export function createScrollTour(){
   for(let index=0;index<TOUR_STOPS.length;index++){
    const key=TOUR_STOPS[index].key,point=anchors[key];
    targets[index].copy(point);
-   if(key==="overview"){direction.copy(anchors.moon).sub(center).normalize();positions[index].copy(anchors.moon).addScaledVector(direction,Math.max(9,anchors.moonRadius*5));positions[index].y+=anchors.moonRadius*2;continue;}
+   if(key==="overview"){
+    // A level, axial view keeps Earth and the lettering head-on, independent of pad orientation.
+    targets[index].set(center.x,center.y,anchors.overview.z);
+    const fitDistance=(anchors.overviewWidth??0)/(2*Math.tan(20*Math.PI/180)*Math.max(.1,anchors.aspect??1)*.78);
+    // Preserve the approved opening distance when the foreground Moon is repositioned.
+    const openingMoonZ=center.z+(radius*3.6+radius*.273)*Math.cos(Math.PI/10);
+    positions[index].set(center.x,center.y,Math.max(openingMoonZ+Math.max(9,radius*.273*5),targets[index].z+fitDistance,center.z+viewDistance));
+    continue;
+   }
    direction.copy(point).sub(center).normalize();
    positions[index].copy(point).addScaledVector(direction,viewDistance);
    if(key==="moon")positions[index].y+=anchors.moonRadius*1.8;

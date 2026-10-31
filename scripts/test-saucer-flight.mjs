@@ -76,3 +76,12 @@ test("strafe and thrust lean toward local movement and ease level after braking"
   assert.ok(Math.abs(s.bank)<.001);assert.ok(Math.abs(s.lean)<.001);
  }
 });
+
+test('main flight range permits a long retreat and the chase camera follows at the expanded boundary',async()=>{
+ const {sceneFlightRadius}=await import('../components/three/ufo/saucer-flight.mjs');
+ const {followCameraPose}=await import('../components/three/animation/follow-camera.mjs');
+ const radius=sceneFlightRadius(6.5),center=[0,.35,-9],s=createFlight(center);assert.equal(radius,156);assert.ok(sceneFlightRadius(1)>=120);
+ for(let i=0;i<1800;i++)stepFlight(s,{...idle,thrust:1},1/60,{center,outer:radius});
+ const distance=s.position.distanceTo(new Vector3(...center));assert.ok(distance>100);assert.ok(distance<=radius+1e-8);
+ const pose=followCameraPose(s.position,0,6.5,new Vector3(0,0,1));assert.ok(pose.position.distanceTo(s.position)<12);assert.ok(pose.target.clone().sub(s.position).length()>0);
+});

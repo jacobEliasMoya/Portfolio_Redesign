@@ -16,7 +16,7 @@ test("hundreds of original tiles stay one debris batch, with preserved transform
 });
 test("gentle bumps and reduced-motion crashes use pooled sparks without visible ship fragments",()=>{
  const {ship}=fixture(),pool=createCrashPool(ship);prepare(pool);
- const sparks=pool.root.children[0],batch=pool.root.children[1];
+ const sparks=pool.root.children[0],batch=pool.root.children.find(o=>o instanceof InstancedMesh&&o.count===200);
  pool.trigger({...event,kind:"bounce"});assert.equal(sparks.count,8);assert.equal(batch.visible,false);pool.step(.1,.1);
  pool.trigger(event,true);assert.equal(sparks.count,3);assert.equal(batch.visible,false);const before=sparks.instanceMatrix.array.slice();pool.step(.1,.1);assert.deepEqual(sparks.instanceMatrix.array,before);
  pool.dispose();
@@ -25,6 +25,6 @@ test("gentle bumps and reduced-motion crashes use pooled sparks without visible 
 test("continuous hull sections prepare before impact without losing triangles or color attributes",()=>{
  const ship=new Group(),geometry=new BoxGeometry(3,1,3),mesh=new Mesh(geometry,new MeshStandardMaterial());ship.add(mesh);
  const pool=createCrashPool(ship);prepare(pool);assert.ok(pool.batchCount>1&&pool.batchCount<=8);
- const count=pool.root.children.slice(1).reduce((sum,b)=>sum+b.geometry.getAttribute("position").count,0);
+ const count=pool.root.children.slice(1).filter(b=>b instanceof InstancedMesh).reduce((sum,b)=>sum+b.geometry.getAttribute("position").count,0);
  assert.equal(count,geometry.index.count);pool.trigger(event);assert.equal(pool.step(.016,.016),true);pool.dispose();geometry.dispose();mesh.material.dispose();
 });

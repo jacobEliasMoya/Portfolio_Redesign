@@ -5,12 +5,12 @@ import {WEAPON_SLOTS,weaponForKey,createWeaponSelection} from "../components/thr
 import {createWeaponCharge} from "../components/three/ufo/weapon-charge.mjs";
 import {createBoltPool,launchBolt,BOLT_LIFETIME} from "../components/three/ufo/projectile-pool.mjs";
 
-test("keyboard slots select independent weapons; slot3 stays reserved without changing the current weapon",()=>{
+test("keyboard slots select independent weapons; slot3 stays locked below the score threshold without changing the current weapon",()=>{
  const selection=createWeaponSelection(),charge=createWeaponCharge(),shots=[];
  assert.equal(selection.selected,"bolts");assert.equal(weaponForKey("Numpad2"),"death-ray");
  assert.equal(selection.select("Digit2",charge,shots),true);assert.equal(selection.selected,"death-ray");
  assert.equal(selection.select("Digit3",charge,shots),false);assert.equal(selection.select("Numpad3",charge,shots),false);assert.equal(selection.selected,"death-ray");
- assert.equal(selection.select("Numpad1",charge,shots),true);assert.equal(selection.selected,"bolts");assert.equal(WEAPON_SLOTS[2].id,null);
+ assert.equal(selection.select("Numpad1",charge,shots),true);assert.equal(selection.selected,"bolts");assert.equal(WEAPON_SLOTS[2].id,"singularity");
 });
 
 test("weapon1 keeps a fully charged bolt; weapon2 fires while held without activating charge",()=>{

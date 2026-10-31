@@ -1,4 +1,5 @@
 import {AdditiveBlending,BufferGeometry,Color,DynamicDrawUsage,Float32BufferAttribute,Group,InstancedMesh,Matrix4,Mesh,MeshBasicMaterial,Object3D,Vector3} from "three";
+import {createCrashBlast} from "./crash-blast.mjs";
 function splitGeometry(source){
  source.computeBoundingSphere();
  if(source.boundingSphere.radius<=1)return [source.clone()];
@@ -17,13 +18,14 @@ export function createCrashPool(ship){
  const sparksGeometry=new BufferGeometry();sparksGeometry.setAttribute("position",new Float32BufferAttribute([-.04,-.04,0,.04,-.04,0,0,.07,0],3));
  const sparksMaterial=new MeshBasicMaterial({color:"#ffffff",transparent:true,depthWrite:false,blending:AdditiveBlending,side:2});
  const sparks=new InstancedMesh(sparksGeometry,sparksMaterial,18),sparkState=Array.from({length:18},particle);sparks.instanceMatrix.setUsage(DynamicDrawUsage);sparks.frustumCulled=false;sparks.visible=true;root.add(sparks);
+ const blast=createCrashBlast();root.add(blast.root);
  scratch.scale.setScalar(0);scratch.updateMatrix();for(let i=0;i<18;i++)sparks.setMatrixAt(i,scratch.matrix);sparks.instanceMatrix.needsUpdate=true;
  for(let i=0;i<18;i++){color.set(i%2?"#ffb74b":"#ffe9a3");sparks.setColorAt(i,color);}
- function motion(piece,event,i){const angle=i*2.399;piece.velocity.copy(piece.position).sub(event.point).normalize().multiplyScalar(event.kind==="crash"?2:1).addScaledVector(event.normal,1.5);piece.velocity.x+=Math.cos(angle)*1.5;piece.velocity.y+=Math.sin(angle)*1.5;piece.velocity.z+=Math.sin(angle*1.7)*1.5;piece.velocity.addScaledVector(event.velocity,.2);piece.spin.set(Math.sin(angle)*3,Math.cos(angle)*4,2);}
- function hide(){active=false;for(const b of batches)b.mesh.visible=false;sparks.visible=false;}
+ function motion(piece,event,i){const angle=i*2.399,hard=event.kind==="crash",scatter=hard?4:1.5;piece.velocity.copy(piece.position).sub(event.point).normalize().multiplyScalar(hard?7+Math.abs(Math.sin(angle))*5:1).addScaledVector(event.normal,hard?3:1.5);piece.velocity.x+=Math.cos(angle)*scatter;piece.velocity.y+=Math.sin(angle)*scatter;piece.velocity.z+=Math.sin(angle*1.7)*scatter;piece.velocity.addScaledVector(event.velocity,.2);if(hard)piece.velocity.multiplyScalar(.45);piece.spin.set(Math.sin(angle)*(hard?7:3),Math.cos(angle)*(hard?9:4),hard?5:2);}
+ function hide(){active=false;for(const b of batches)b.mesh.visible=false;sparks.visible=false;blast.hide();}
  return {root,get ready(){return cursor===sources.length&&sparkWarming===0&&!batches.some(b=>b.warming);},get batchCount(){return batches.length;},get fragmentCount(){return batches.reduce((n,b)=>n+b.state.length,0);},
  prepare(budgetMs=3){
-  if(!active&&sparkWarming>0&&--sparkWarming===0)sparks.visible=false;
+  if(!active&&sparkWarming>0&&--sparkWarming===0){sparks.visible=false;blast.hide();}
   // Warm each new batch for one rendered frame at zero scale, then hide it.
   if(!active)for(const b of batches)if(b.warming){b.mesh.visible=false;b.warming=false;}
   const start=performance.now();
@@ -43,6 +45,7 @@ export function createCrashPool(ship){
   return cursor===sources.length;
  },trigger(event,reducedMotion=false){
   hide();duration=event.kind==="crash"?2:.5;skipMotion=reducedMotion;active=true;
+  blast.trigger(event,reducedMotion);
   if(event.kind==="crash"&&!reducedMotion){
    ship.updateWorldMatrix(true,true);let index=0;
    for(const b of batches){b.mesh.visible=true;b.warming=false;for(let i=0;i<b.state.length;i++){
@@ -56,9 +59,10 @@ export function createCrashPool(ship){
  },step(delta,age){
   if(!active)return false;const fade=Math.max(0,1-age/duration),dt=Math.min(delta,.05);
   if(fade===0){hide();return false;}
-  function animate(mesh,states,count){for(let i=0;i<count;i++){const p=states[i];if(!skipMotion){p.position.addScaledVector(p.velocity,dt);p.velocity.multiplyScalar(Math.exp(-dt));p.rotation.addScaledVector(p.spin,dt);}scratch.position.copy(p.position);scratch.rotation.set(p.rotation.x,p.rotation.y,p.rotation.z);scratch.scale.copy(p.scale);scratch.updateMatrix();mesh.setMatrixAt(i,scratch.matrix);}mesh.instanceMatrix.needsUpdate=true;}
+  blast.step(age);
+  function animate(mesh,states,count){for(let i=0;i<count;i++){const p=states[i];if(!skipMotion){p.position.addScaledVector(p.velocity,dt);p.velocity.multiplyScalar(Math.exp(-dt*(duration===2?.5:1)));p.rotation.addScaledVector(p.spin,dt);}scratch.position.copy(p.position);scratch.rotation.set(p.rotation.x,p.rotation.y,p.rotation.z);scratch.scale.copy(p.scale);scratch.updateMatrix();mesh.setMatrixAt(i,scratch.matrix);}mesh.instanceMatrix.needsUpdate=true;}
   for(const b of batches)if(b.mesh.visible)animate(b.mesh,b.state,b.state.length);
   for(const {material,opacity} of materials.values())material.opacity=opacity*fade;
   animate(sparks,sparkState,sparks.count);sparksMaterial.opacity=fade;return true;
- },dispose(){for(const b of batches){b.mesh.dispose();b.mesh.geometry.dispose();}for(const {material} of materials.values())material.dispose();sparks.dispose();sparksGeometry.dispose();sparksMaterial.dispose();root.clear();root.removeFromParent();}};
+ },dispose(){for(const b of batches){b.mesh.dispose();b.mesh.geometry.dispose();}for(const {material} of materials.values())material.dispose();blast.dispose();sparks.dispose();sparksGeometry.dispose();sparksMaterial.dispose();root.clear();root.removeFromParent();}};
 }

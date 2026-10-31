@@ -1,3 +1,101 @@
+## Rare Cape Canaveral rocket launches - 2026-10-31
+
+Implemented Jacob's approved rocket-specific rarity system: Standard 80% / white single-core / 5,000 points; Rare 17% / triple booster / 10,000; Legendary 3% / silver fins and gold exhaust / 25,000. Random rarity tickets derive from the single balance table in components/three/rockets/rocket-event.mjs. Launches begin 60–120 active scene seconds after readiness and recur at 60–120 seconds between starts, at most one active rocket. Flights last 22 seconds; destroyed rockets do not accelerate launch cadence, and misses/escapes grant no points.
+
+Launches originate at NASA's LC-39A coordinates (28.608422 N, -80.604133 E), mapped into the existing globe convention. Safe Cape terrain/wave clearance, radial liftoff, accelerating eastward turn toward orbit, then fade-out. Children inherit Earth's reveal, tilt, spin, drag and depth occlusion. Original procedural models: 204 / 424 / 228 body triangles; only one body drawn, pooled three-engine plume and 16 smoke puffs (at most three active draws / 762 triangles). Compact existing crash-blast pool handles destruction. Reduced motion freezes the launch clock and disables plume/smoke motion. Singularity consumption stops future launches and rocket hit registration without resurrecting captured meshes.
+
+Existing bolt/ray collision pipeline awards the flat rarity reward once, independent of charge; per-launch serial/phase checks reject duplicate and stale hits. The live mechanical score receives actual confirmed destruction points. Launch and reward announcements use the existing Sabo 3D HUD lettering with native accessible status and a short timeout; generation checks protect newer notices. Guide lists chances/rewards. No live feed, branded assets or new dependency.
+
+Verification: 249 full regression tests, lint and production build. Rocket tests cover exact 80/17/3 boundaries, interval/one-active scheduling, no kill cooldown farming/catch-up bursts, geographic/terrain-safe smooth path, model bounds/disposal, real tap/full-charge/ray rewards for all tiers, repeat/stale-hit rejection, singularity stop, notices and compact explosion/no resurrection. Offline exact-model front, rear and three-quarter renders reviewed; removed overlapping heavy-booster fins that caused coplanar artifacts. Actual browser reviewed an accelerated Legendary fixture: Florida launch, silver rocket curving east with gold exhaust and Sabo announcement, no browser errors. All timing/rarity test overrides removed; production starts at score zero and normal cadence. Saved screenshot in Codex workspace outputs/cape-rocket-launch.png. Live aimed rocket kill and real-device FPS remain unverified. Jacob requested commit and push after final checks.
+
+## Core capture, propulsion cutoff and wide-disc lensing - 2026-10-31
+
+Impact Singularity now uses the approved V2 wide-disc factory (7,121 disc/debris tiles) with its warm secondary-disc light-bending arcs. Lensing follows the live hole's position/scale, hides until impact, and uses a bounded 384–768px atlas. Temporary camera/object light layers isolate the actual disc and scene lights in the live atlas; Earth terrain is not rendered a second time and terrain colors do not contaminate the arcs. Original /black-hole preview lookup remains supported.
+
+Visible core is the point of no return: radius 2.04 times world scale (including matte panel relief), separate from the much wider finite gravitational influence. Four-second impact-relative grace remains. Afterwards a swept segment/core check latches ship capture, including fast crossings. Uncaptured ships are no longer shader-consumed solely for being inside the broad influence radius at eight seconds. Captured ships lose all flight/weapon/respawn input, engine power hard-cuts to zero, rim bursts clear immediately, and the craft drifts into the core and disappears over two seconds. Captured state persists until Reset Universe, even if pilot mode changes.
+
+The existing single camera owner takes over on capture: it keeps the approach side, smoothly frames the black-hole center from outside the complete wide disc, and stays locked there after the UFO is consumed. Portrait framing increases observation distance; reduced motion snaps. Original Earth/ship camera clearance does not redirect this captured observation pose. HUD shows Propulsion Offline then Consumed and disables flight/weapon exit controls while keeping Reset Universe available. Guide explains the boundary and camera lock.
+
+Verification: 242 regression tests, lint and production build pass. Added actual-core versus influence-radius/grace/swept-crossing latch, inward propulsion-free drift, offline rim state, irreversible capture, stable hole-focused camera and portrait framing checks. Existing impact integration asserts V2's 7,121 tiles and capture-to-consumption. Live browser fixture (temporary score 6,800): bomb impacted, UFO was captured/consumed, wide disc with golden bent-light arcs filled the locked camera view; reverse thrust and R did not restore control. No browser errors observed. Fixture removed; final starts at zero. Screenshot: Codex workspace outputs/wide-black-hole-camera-lock.png. Real-device GPU/FPS profiling remains unverified. Not committed or pushed.
+
+## Impact-triggered atom bomb and expanded escape range - 2026-10-31
+
+Singularity now fires a physical black atom-shaped bomb from the actual cannon muzzle, aligned with its world orientation and inheriting ship velocity. Three merged electron orbits and pale restrained electron beads surround a faceted matte-black nucleus (three draws). Slot 3 uses the matching atom miniature. A single preallocated projectile travels at 14 units/sec and sweeps the original terrain/aircraft collision targets. Only an actual hit creates the approved black hole at the contact point. Empty-space misses expire after six simulated seconds; they do not auto-detonate. Score >6,767, one-shot-per-universe, existing native/key controls and Reset Universe persist. Temporary visual fixture starts at 6,800 only during review; removed afterward, production starts at zero.
+
+On impact, nearby live geometry begins pulling immediately (.12 initial collapse progress and a two-unit initial reach); the environmental spiral completes in about four seconds. UFO retains four seconds of impact-relative immunity, then becomes vulnerable. The black hole and bomb are prepared once, excluded from capture, and capture/disposal restores original materials. Same live damage/instance buffers, no per-frame terrain uploads. Miss and in-flight HUD states now distinguish a traveling bomb from an active hole. Guide describes firing, misses and reverse-thrust escape.
+
+Expanded main-scene flight bounds from Earth-radius*5.51 (~35.8 desktop units) to max(120,Earth-radius*24) (156 desktop units), retaining movement feel and small preview bounds. Existing chase camera already follows the expanded range and its far plane covers it. Singularity reach now caps at the world-body extent, so a ship can retreat outside its influence instead of eventually being caught by endless expansion. S provides reverse thrust while keeping the collapse in view.
+
+Verification: 239 regression tests, lint and production build pass. Added actual transformed muzzle/velocity launch, swept nearest hit/no tunneling, no damage duplication, no airburst on miss, immediate impact-frame pull, one capture, black-hole visibility, resource restoration, bounded model cost, finite reach, extended travel/camera follow and simulated reverse-thrust escape. Live browser review with temporary score: atom clearly traveled from UFO; impact activated consumption; retreat left the UFO alive with the black hole visible after Universe Consumed; no browser shader errors observed. Screenshots saved in the Codex workspace outputs. Real-device GPU/FPS profiling remains unverified. Not committed or pushed.
+
+## Lower, lighter air traffic - 2026-10-31
+
+Reduced the simultaneous fleet from 24 to 12; pooled twin trails drop from 384 to 192 puffs. Total triangles halve to 7,872 across the same two draws. Preserved smooth forward motion, varied sizes/colors, worldwide coverage, contrails, destruction and 1,000-point rewards.
+
+Flight heights now use offline per-route clearances from the actual Earth hex geometry, peak .055 ocean lift and largest complete aircraft bounding sphere, plus .025 safety margin. Constant safe height along each route avoids terrain-following swivel/pitch. Gentle extra arc reduced from .14 to .035. Base route radii span 3.3052–3.6673, with maximum cruise radius 3.7023 versus old 3.90. Routes remain higher over mountains where required for clearance; clouds may lie below these safe paths. Regenerate route-clearances.mjs with node scripts/generate-flight-clearances.mjs after terrain, model, scale or route changes. No runtime terrain scan.
+
+Verification: 231 full regression tests pass. New clearance check samples all 1,156 routes at 65 positions, comparing the largest aircraft sphere to nearby terrain tile bounds including peak waves. Covers finite poses, hidden airport turns, smooth motion, pooled budgets and scoring. Lint/production build pass. Browser review separate from numerical clearance; no real-device FPS claim. Not committed or pushed.
+
+## Unlockable live Singularity - 2026-10-31
+
+Slot 3 is visibly present as Singularity, disabled until score is strictly greater than 6,767 (6,768 qualifies). Both keyboard and native button requests enforce the threshold; activation also requires flying and the selected slot. F/click fires once per scene. Existing Sabo 3D HUD lettering and a miniature of the approved matte paneled black hole represent the weapon. Guide documents the unlock and reset.
+
+Activation places the existing original black-hole model seven units ahead of the UFO. Its disc grows while the live scene's original mesh/instance buffers spiral inward using material shader uniforms. This preserves current crater damage and surviving aircraft instead of substituting pristine planet copies. No per-frame terrain buffer uploads or React animation state. Four seconds of UFO immunity precede a physical velocity pull inside the expanding reach and visual consumption; consumed ships cannot fly/respawn. Reach scales to the scene extent. Starfield remains. Reset Universe reloads the scene, restoring planets, aircraft, ship, score and one-use lock. Reduced motion shortens the collapse and suppresses disc orbit. The escape timer follows elapsed real time so slow frames do not stretch four seconds indefinitely.
+
+Verification: 230 regression tests pass, including strict threshold, flying/selection guards, repeat-use rejection, original buffer preservation, capture exclusions, grace period and resource restoration. Browser reviewed zero-score disabled slot, a temporary 6,800-point unlocked fixture, activation/spent state, live shader spiral and Universe Consumed outcome, then Reset Universe restarting loading. No browser shader errors observed. Temporary score fixture removed; final score starts at zero. Lint/production build checked. Real-device GPU/FPS profiling and an aimed seven-plane unlock remain unverified. Not committed or pushed.
+
+## Restore smooth aircraft travel - 2026-10-31
+
+Removed visible airport swiveling and terrain-following pitch; restored smooth spherical flight arcs with hidden heading changes. Replaced tiny nearest-airport hops with longer connected routes while retaining all airport coverage, contrails, plane destruction and scoring. Five focused checks, lint and build pass; browser motion reviewed. Not committed or pushed.
+
+## Worldwide traffic, contrails and aircraft scoring - 2026-10-31
+
+Added a 24-plane smaller/faster fleet cycling through all 1,156 large scheduled-service airports in the bundled OurAirports snapshot. Local-relief descents, stops and takeoffs replace disappearing turnarounds; short pooled twin contrails use one extra draw. Planes are destructible and award a flat 1,000 points once, with brief smoke and no animation resurrection. Terrain scoring stays unchanged. Full source/provenance and generation script included. 228 tests, lint/build pass; fleet/trail visuals checked in browser, live targeted plane aiming not verified. Not committed or pushed.
+
+## Smaller crash explosion - 2026-10-31
+
+Reduced the entire crash blast to 45% of its previous linear size and hard-crash debris/spark speed to 45%, retaining the explosion sequence and respawn behavior. Five focused crash checks, lint/build pass; live resized crash not rechecked. Not committed or pushed.
+
+## Miniature airport traffic and varied planes - 2026-10-31
+
+Added three lightweight toy jets on geographic SFO–JFK, JFK–LHR and HND–SFO arcs, attached to Earth's rotation/drag with natural depth occlusion and reduced-motion support. Coral small, pale-blue standard and cream larger instances share one 336-triangle model/material in one draw. Airport coordinate provenance and model review renders included. All 223 tests, lint/build pass; browser and offline geometry visually reviewed. Not committed or pushed.
+
+## Proper UFO crash explosion - 2026-10-31
+
+Added preallocated hot blast, overlapping fire lobes, expanding shockwave and short smoke aftermath to hard UFO crashes. Stronger immediate outward impulse/tumbling replaces slow separation; respawn, gentle bumps and reduced-motion handling remain. Four small transient blast draws, no lights/bloom or trigger-time resource creation. All 221 tests, lint and build pass; actual flight crashes inspected in browser. Not committed or pushed.
+
+## Death-ray CPU optimization - 2026-10-31
+
+Clipped long beam collision-grid traversal to target bounds, reused query scratch, limited crater deformation to the new impact region, and moved immutable crater-cache preparation into existing background tasks. Preserved damage/score/visuals; original-vs-optimized 24-impact geometry comparison matches. Added repeatable real-asset CPU audit and chunked-preparation regression checks. All 219 tests, lint and build pass; live sustained firing checked. Timings and remaining profiling limits are in docs/performance.md. Not committed or pushed.
+
+## Mechanical score and complete navigation roll - 2026-10-31
+
+Built genuine rotating Sabo digit drums for the damage score, preserving cyan 3D HUD styling. Added a shared-pivot transition: the entire navigation rolls out, then the whole score rolls in; exit reverses it. Digit reels turn independently only as points accumulate. Reduced motion switches directly. 14 targeted tests, lint and build pass; browser inspected entry, exit and scoring. Not committed or pushed.
+
+## Flight damage score - 2026-10-31
+
+Replaced tour navigation during piloting with live Sabo SCORE: 00000. Confirmed damage earns 100 points per existing damage unit for bolts/ray; misses and duplicate impacts do not score. Score persists until scene reload; exit restores navigation. 25 focused tests, lint and build pass. Browser verified launch, a live hit awarding 500 points, and restored navigation on exit. Not committed or pushed.
+
+## Lunar foreground placement - 2026-10-31
+
+Raised/repositioned the stationary Moon to show its upper hemisphere and parked UFO below Jakes Space. Decoupled opening camera distance from live Moon placement while preserving its prior starting pose. 13 focused checks, lint and build pass; final 1280x720 composition reviewed in browser. Not committed or pushed.
+
+## Level head-on opening - 2026-10-31
+
+Centered Overview at Earth's X/Y with a straight -Z view, removing pad-relative elevation/angles. Retained responsive full-title framing, fixed Moon/title and rotating Earth. 11 camera/tour checks, lint and production build pass; level opening visually reviewed in the browser. Not committed or pushed.
+
+## Fixed Moon and title trial - 2026-10-31
+
+Disabled automatic Moon orbit in the main scene and stopped automatic Jakes Space text orbit after formation/wrapping. Retained manual Moon/text dragging, Earth rotation and existing effects/interactions. Updated accessible scene descriptions. 24 focused regression checks, lint and production build pass; settled composition reviewed in the browser. Not committed or pushed.
+
+## Title-first lunar opening - 2026-10-31
+
+Refocused Overview on the initial complete Jakes Space lettering. Added actual title center/width metadata, responsive camera distance to fit the full name, and a raised lunar viewpoint keeping the parked UFO and Moon below it. 12 focused tests, lint and production build pass; opening visually checked in the in-app browser. Not committed or pushed.
+
+## Centered lunar opening camera - 2026-10-31
+
+Aligned Overview behind the lunar pad/parked craft looking directly at Earth's center. Removed the additional camera-height offset and stabilized opening stand-off against Moon reveal scaling. Verified fresh-load/Home composition in the in-app browser; 11 focused camera/tour tests, lint and production build pass. No commit or push.
+
 ## Lower pad with level default and Moon-relative rotation - 2026-10-30
 
 Jacob clarified that level refers to the initial/default pose, not continuous stabilization. Reduced pad height from1.14 to.98 model units and shortened supports from.6 to.4, preserving their foundation anchoring. Body bottom is.90, clearing the highest undamaged lunar facets (about.879).

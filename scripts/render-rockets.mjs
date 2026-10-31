@@ -1,0 +1,13 @@
+import {mkdtemp,writeFile,mkdir,rename} from "node:fs/promises";
+import {tmpdir} from "node:os";
+import {join,resolve} from "node:path";
+import {spawnSync} from "node:child_process";
+import {Group,Mesh} from "three";
+import {createRocketModel} from "../components/three/rockets/rocket-model.mjs";
+import {ROCKET_RARITIES} from "../components/three/rockets/rocket-event.mjs";
+import {serializeThreeAsset} from "./serialize-three-asset.mjs";
+const models=ROCKET_RARITIES.map(createRocketModel),root=new Group();models.forEach((model,index)=>{const mesh=new Mesh(model.geometry,model.material);mesh.position.x=(index-1)*2;mesh.scale.setScalar(1.6);root.add(mesh);});
+const asset=serializeThreeAsset(root);models.forEach((model,index)=>{const flat=model.geometry.index?model.geometry.toNonIndexed():model.geometry.clone();asset.meshes[index].colors=Array.from({length:flat.attributes.color.count},(_,i)=>[flat.attributes.color.getX(i),flat.attributes.color.getY(i),flat.attributes.color.getZ(i)]);flat.dispose();});
+const folder=await mkdtemp(join(tmpdir(),"portfolio-rockets-")),file=join(folder,"model.json"),output=resolve(process.argv[2]??"docs/references/rockets");await mkdir(output,{recursive:true});await writeFile(file,JSON.stringify(asset));
+const run=spawnSync(process.env.BLENDER_EXECUTABLE??"C:/Program Files/Blender Foundation/Blender 4.3/blender.exe",["--background","--factory-startup","--python-exit-code","1","--python",resolve("scripts/render-satellite.py"),"--",file,output,"satellite"],{stdio:"ignore",windowsHide:true});models.forEach(model=>model.dispose());if(run.error)throw run.error;process.exitCode=run.status??1;
+if(run.status===0)for(const view of ["front","rear","front-ortho","side"])await rename(join(output,`satellite-model-${view}.png`),join(output,`rockets-${view}.png`));console.log({output,status:run.status});
