@@ -1,3 +1,11 @@
+## Lower pad with level default and Moon-relative rotation - 2026-10-30
+
+Jacob clarified that level refers to the initial/default pose, not continuous stabilization. Reduced pad height from1.14 to.98 model units and shortened supports from.6 to.4, preserving their foundation anchoring. Body bottom is.90, clearing the highest undamaged lunar facets (about.879).
+
+initializeLunarPad now captures a level default pose once after reveal has a valid transform, before the ship's first landing/launch sample. Position and quaternion are then retained in Moon-local space: orbit, drag and rotation naturally move the complete platform, its lights and supports. Removed per-frame counter-rotation/repositioning. Default horizontal heading, scale.8, spacecraft landing/launch and existing beacons remain.
+
+Verification:209 full regression tests, lint and production build pass. Updated tests verify initial leveling, unchanged local attachment under subsequent Moon rotation, expected world motion and landing approach normal, reveal-zero safety and lowered terrain/support clearance. Live browser/device review remains pending under the existing access restriction. User requested committing and pushing this correction.
+
 ## Compact weapon slots, switch particles, flag hover and raised level pad - 2026-10-30
 
 Tidied the lower-left ship controls: smaller status icon, aligned Launch/Land and Exit buttons, separate L key badge, and a fixed4.8em action-text area preserving the erase/type animation. Weapon name and charge indicators moved into a centered bottom weapon bar while piloting. Slots are80x64px (68x60 on narrow screens), with1/2 selectable by keyboard or native button;3 remains disabled/reserved. Active cyan/red borders follow actual selected weapon state; bolt charge uses12 small cells in slot1. Desktop footer uses symmetric side columns to center the bar. Narrow layouts stack without overlap and preserve safe-area margins.

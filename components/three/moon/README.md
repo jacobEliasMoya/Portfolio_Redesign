@@ -1,3 +1,11 @@
+## Lower pad with level default and Moon-relative rotation - 2026-10-30
+
+Jacob clarified that level refers to the initial/default pose, not continuous stabilization. Reduced pad height from1.14 to.98 model units and shortened supports from.6 to.4, preserving their foundation anchoring. Body bottom is.90, clearing the highest undamaged lunar facets (about.879).
+
+initializeLunarPad now captures a level default pose once after reveal has a valid transform, before the ship's first landing/launch sample. Position and quaternion are then retained in Moon-local space: orbit, drag and rotation naturally move the complete platform, its lights and supports. Removed per-frame counter-rotation/repositioning. Default horizontal heading, scale.8, spacecraft landing/launch and existing beacons remain.
+
+Verification:209 full regression tests, lint and production build pass. Updated tests verify initial leveling, unchanged local attachment under subsequent Moon rotation, expected world motion and landing approach normal, reveal-zero safety and lowered terrain/support clearance. Live browser/device review remains pending under the existing access restriction. User requested committing and pushing this correction.
+
 ## Raised platform and pointer-responsive flag - 2026-10-30
 
 Pad height1.14 (previously.91), scale.8, three hex supports reaching the lunar foundation. Pad follows the Moon center but stays parallel to scene XZ, preserving projected heading. Pose updates after Moon transforms and before ship landing/launch sampling; zero-scale reveal is guarded. Flag hover adds bounded local fabric movement with shared cloth/stripe/letter deformation, damped entry/exit, blur cleanup and reduced-motion handling. See docs/current-scene.md for validation and browser limitations.

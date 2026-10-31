@@ -1,12 +1,13 @@
 import {Matrix4,Quaternion,Vector3} from "three";
-export const LUNAR_PAD_HEIGHT=1.14,LUNAR_PAD_SCALE=.8;
+export const LUNAR_PAD_HEIGHT=.98,LUNAR_PAD_SCALE=.8;
+export const LUNAR_PAD_SUPPORT_TOP=-.1,LUNAR_PAD_SUPPORT_HEIGHT=.4;
 const up=new Vector3(0,1,0);
-export function createLunarPadPose(){return {center:new Vector3(),point:new Vector3(),scale:new Vector3(),parentRotation:new Quaternion(),rotation:new Quaternion(),candidate:new Vector3(),forward:new Vector3(0,0,-1),right:new Vector3(),basis:new Matrix4()};}
+export function createLunarPadPose(){return {initialized:false,center:new Vector3(),point:new Vector3(),scale:new Vector3(),parentRotation:new Quaternion(),rotation:new Quaternion(),candidate:new Vector3(),forward:new Vector3(0,0,-1),right:new Vector3(),basis:new Matrix4()};}
 
-/** Stabilize the deck parallel to the scene XZ plane while following the Moon.
- * Keep its projected heading, so the parked ship still looks toward the same
- * part of the scene. The Moon's reveal/radius scale is uniform. */
-export function alignLunarPad(pad,pose){
+/** Capture a level default pose once, in Moon-local space. Thereafter the
+ * Moon owns the pad's motion, including orbit, drag and rotation. */
+export function initializeLunarPad(pad,pose){
+ if(pose.initialized)return true;
  const parent=pad.parent;if(!parent)return false;
  parent.updateWorldMatrix(true,false);
  if(Math.abs(parent.matrixWorld.determinant())<1e-12)return false;
@@ -20,5 +21,6 @@ export function alignLunarPad(pad,pose){
  pose.right.crossVectors(up,pose.forward).normalize();pose.basis.makeBasis(pose.right,up,pose.forward);
  pose.rotation.setFromRotationMatrix(pose.basis);
  pad.quaternion.copy(pose.parentRotation).invert().multiply(pose.rotation);pad.updateWorldMatrix(false,false);
+ pose.initialized=true;
  return true;
 }
