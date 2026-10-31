@@ -13,7 +13,7 @@ test('strict score boundary and one use per universe, with flying/selection guar
  store.addDamage(.01);assert.equal(weapons.select('Digit3',charge,[],6768),true);
  store.publish({weapon:'singularity'});assert.equal(store.fireSingularity(shot),false);
  store.publish({mode:'flying'});assert.equal(store.fireSingularity(),false);assert.equal(store.getSnapshot().singularityUsed,false);assert.equal(store.fireSingularity(shot),true);assert.equal(store.getSnapshot().singularityPhase,'flight');assert.equal(fired,1);
- assert.equal(store.fireSingularity(shot),false);assert.equal(store.requestWeapon('Digit3'),false);
+ assert.equal(store.fireSingularity(shot),true);assert.equal(store.getSnapshot().singularityPhase,'detonating');assert.equal(store.fireSingularity(shot),false);assert.equal(store.requestWeapon('Digit3'),false);
  weapons.begin('key',0,charge);assert.equal(charge.active,false);assert.equal(weapons.release('key',1000,charge),null);
  assert.equal(createHudState().getSnapshot().singularityUsed,false);
 });

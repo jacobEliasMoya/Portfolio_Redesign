@@ -24,7 +24,7 @@ export function LensingField({source}:{source?:Group}={}){
   const masks:{object:Object3D;mask:number}[]=[];
   if(source){atlasCamera.layers.set(31);disc.traverse(object=>{if(object instanceof Mesh){masks.push({object,mask:object.layers.mask});object.layers.set(31);}});scene.traverse(object=>{if("isLight" in object){masks.push({object,mask:object.layers.mask});object.layers.enable(31);}});}
   try{gl.setRenderTarget(target);gl.clear();gl.render(scene,atlasCamera);}finally{gl.setRenderTarget(previous);for(const entry of masks)entry.object.layers.mask=entry.mask;mesh.visible=true;if(shell)shell.visible=visible??true;for(const entry of excluded)entry.object.visible=entry.visible;}
-  camera.getWorldPosition(vectors.view);vectors.view.sub(vectors.position).normalize();const edgeOn=1-Math.abs(vectors.normal.dot(vectors.view));live.uArcVisibility.value=.35+.65*Math.pow(edgeOn,1.1);
+  camera.getWorldPosition(vectors.view);vectors.view.sub(vectors.position).normalize();const edgeOn=1-Math.abs(vectors.normal.dot(vectors.view));live.uArcVisibility.value=(.35+.65*Math.pow(edgeOn,1.1))*(source?.userData.materializationProgress??1);
   vectors.inverse.copy(disc.matrixWorld).invert();camera.getWorldPosition(vectors.view);vectors.view.applyMatrix4(vectors.inverse);live.uAzimuth.value=Math.atan2(vectors.view.x,vectors.view.z);
  });
  return <mesh ref={plane} renderOrder={10} frustumCulled={false}>

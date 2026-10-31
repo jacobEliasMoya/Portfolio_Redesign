@@ -12,6 +12,7 @@ import { UFOModel,type UFOType } from "./ufo-model";
 import { getFlightInput } from "./flight-controls.mjs";
 import { createWeaponCharge } from "./weapon-charge.mjs";
 import {driftCapturedShip} from "../black-hole/ship-capture.mjs";
+import {canRemoteDetonate} from "./hud-state.mjs";
 import {createAtomLaunch} from "../black-hole/atom-projectile.mjs";
 import {createWeaponSelection,weaponForKey,type WeaponShot} from "./weapon-selection.mjs";
 import { createFlight, setFlightAttitude,stepFlight,sceneFlightRadius } from "./saucer-flight.mjs";
@@ -47,7 +48,7 @@ export function PilotSaucer({hudStore,actionRequest=0,type="hexagonal",launchCam
   const previousTabIndex=canvas.getAttribute("tabindex");canvas.setAttribute("tabindex","0");canvas.focus({preventScroll:true});
   const detachWeaponRequests=hudStore?.subscribeWeaponRequest((code:string)=>{
    if(hudStore?.getSnapshot().singularityShipCaptured||!visible||document.hidden||document.querySelector("dialog[open]"))return;
-   weapons.current.select(code,charge.current,shotsRef.current,hudStore?.getSnapshot().score,hudStore?.getSnapshot().singularityUsed);canvas.focus({preventScroll:true});invalidate();
+   weapons.current.select(code,charge.current,shotsRef.current,hudStore?.getSnapshot().score,!!hudStore?.getSnapshot().singularityUsed&&!canRemoteDetonate(hudStore!.getSnapshot()));canvas.focus({preventScroll:true});invalidate();
   });
   const supported=new Set(["KeyL","KeyF","KeyQ","KeyE","KeyC","KeyW","KeyS","KeyA","KeyD","Space","ShiftLeft","ShiftRight","KeyR","ArrowLeft","ArrowRight","ArrowUp","ArrowDown"]);
   const clear=()=>{keys.current.clear();landing.current.requested=false;shotsRef.current=[];weapons.current.cancel(charge.current);invalidate();};
@@ -62,7 +63,7 @@ export function PilotSaucer({hudStore,actionRequest=0,type="hexagonal",launchCam
    if(target&&(target.closest("input,textarea,select,dialog")||target.isContentEditable))return;
    if(weaponKey){
     if(e.ctrlKey||e.metaKey||e.altKey||e.repeat)return;
-    e.preventDefault();weapons.current.select(e.code,charge.current,shotsRef.current,hudStore?.getSnapshot().score,hudStore?.getSnapshot().singularityUsed);invalidate();return;
+    e.preventDefault();weapons.current.select(e.code,charge.current,shotsRef.current,hudStore?.getSnapshot().score,!!hudStore?.getSnapshot().singularityUsed&&!canRemoteDetonate(hudStore!.getSnapshot()));invalidate();return;
    }
    // Space still activates a focused menu button; arrows and flight keys remain available.
    if(e.code==="Space"&&target?.closest("button,a"))return;

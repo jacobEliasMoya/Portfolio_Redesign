@@ -24,6 +24,9 @@ export function stepAtom(projectile,delta,targets,now){
  projectile.previous.copy(projectile.position);projectile.position.addScaledVector(projectile.velocity,dt);projectile.age+=dt;
  const hit=firstProjectileHit(targets,projectile.previous,projectile.position,now);
  if(hit){projectile.position.copy(hit.point);projectile.impact=hit;projectile.phase="impact";}
- else if(projectile.age>=ATOM_LIFETIME)projectile.phase="missed";
+ else if(projectile.age>=ATOM_LIFETIME){projectile.phase="armed";projectile.velocity.set(0,0,0);}
  return projectile.phase;
 }
+
+/** A manual trigger is distinct from collision: no fabricated hit or ordinary damage. */
+export function detonateAtom(projectile){if(!["flight","armed"].includes(projectile.phase))return false;projectile.phase="detonated";projectile.velocity.set(0,0,0);return true;}

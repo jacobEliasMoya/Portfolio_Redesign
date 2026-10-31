@@ -4,14 +4,14 @@ import {useFrame,useThree} from "@react-three/fiber";
 import type {Vector3} from "three";
 import type {HudStore} from "../ufo/arcade-hud";
 import {LensingField} from "./lensing-field";
-import {createSingularityEffect,launchSingularity,stepSingularity,disposeSingularityEffect} from "./singularity-effect.mjs";
+import {createSingularityEffect,launchSingularity,requestSingularityDetonation,stepSingularity,disposeSingularityEffect} from "./singularity-effect.mjs";
 export function Singularity({store,position,reducedMotion}:{store:HudStore;position:RefObject<Vector3>;reducedMotion:boolean}){
  const {scene,invalidate}=useThree();
  const effect=useMemo(()=>createSingularityEffect(),[]),live=useRef(effect);
  useEffect(()=>{
   const current=live.current;
   const unsubscribe=store.subscribeSingularity((shot:Parameters<typeof launchSingularity>[1])=>{
-   if(launchSingularity(current,shot))invalidate();
+   if(shot?launchSingularity(current,shot):requestSingularityDetonation(current))invalidate();
   });
   return()=>{unsubscribe();disposeSingularityEffect(current);};
  },[store,invalidate]);

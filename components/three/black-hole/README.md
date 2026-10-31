@@ -1,6 +1,6 @@
 # Matte hex black hole
 
-Current live-scene gameplay (2026-10-31): slot 3 unlocks above 6,767 points and fires the atom-bomb model from the UFO cannon. A swept collision creates the wide-disc V2 matte black hole with light bending at impact; misses expire after six seconds. Nearby geometry immediately spirals in; UFO immunity lasts four seconds after impact. Crossing the visible core then permanently disables propulsion and locks the observation camera onto the black hole until Reset Universe. Finite suction reach and the expanded 156-unit desktop flight boundary allow escape. Reset Universe restores the scene. See docs/current-scene.md for the authoritative current checkpoint; earlier preview-only notes below are historical.
+Current live-scene gameplay (2026-10-31): slot 3 unlocks above 6,767 points and fires the atom-bomb model from the UFO cannon. A swept collision creates the wide-disc V2 matte black hole with light bending at impact; misses stop after six seconds and stay armed for remote F/click/selected-slot triggering. Nearby geometry immediately spirals in; UFO immunity lasts four seconds after impact. Crossing the visible core then permanently disables propulsion and locks the observation camera onto the black hole until Reset Universe. Finite suction reach and the expanded 156-unit desktop flight boundary allow escape. Reset Universe restores the scene. See docs/current-scene.md for the authoritative current checkpoint; earlier preview-only notes below are historical.
 
 Based on the user-corrected concept docs/references/black-hole/hex-black-hole-concept-v5-tiled-sphere.png: the CENTRAL SPHERE itself is paneled like Earth, not a smooth black void. User requested black/matte panels, smaller disc fragments, controlled chaos and fast orbit. Apply the repository reference-3d-modeling skill.
 
@@ -69,3 +69,11 @@ Regression coverage in scripts/test-black-hole-planets.mjs checks every tile's c
 
 
 Planet consumption stream refinement: detached Earth/Moon tiles no longer preserve a uniformly rotating shell. Each instance has three deterministic seed values prepared once. On detachment, seeded speed (1.0-1.7x), independent tumbling and an immediate smooth size reduction separate neighboring pieces. Exponential inward pull and fast convergence toward the tilted disc plane gather them into a narrow curved stream, with bounded lateral scatter. Every path begins exactly at the released tile center and ends inside radius 1.65 within the existing 3.4-second maximum; reset reuses seeds and buffers. UFO behavior stays as approved. Added tests for detachment continuity, immediate speed spread, inward travel and convergence from different latitudes. Browser appearance remains a user review item.
+
+## Live materialization and remote trigger
+
+The live weapon supports remote airbursts while traveling or armed. Reselecting slot 3 restores its detonator; it never grants another projectile. A pending trigger locks further requests until the next frame begins one capture at the existing bomb position. Automatic impacts still work. The source model is prepared once.
+
+materialization.mjs animates the opaque matte seed, an inward amber pressure ring, brief disc wobble/spin surge and GPU-only assembly of individual hex fragments. Birth uses one shared shader variant with per-band uniforms; instance matrices/colors are unchanged. After ~1.3 seconds geometry returns to the approved V2 silhouette and normal orbital motion; secondary light arcs fade in with formation. The .65-second ring adds one transient draw, and existing model disposal owns it. Reduced motion shows the settled full-size model immediately. The standalone preview does not apply the live birth patch.
+
+Additional regression coverage: scripts/test-singularity-remote.mjs. Complete repo: 260 tests. Native live armed/reselection/remote controls and shader health reviewed; hardware FPS profiling remains separate.

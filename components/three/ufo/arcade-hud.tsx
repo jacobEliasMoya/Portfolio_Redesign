@@ -1,7 +1,7 @@
 "use client";
 import {useEffect,useState,useSyncExternalStore} from "react";
 import {TOUR_STOPS} from "../animation/scroll-tour.mjs";
-import {actionForMode,createHudState,formatScore,stepActionText} from "./hud-state.mjs";
+import {actionForMode,canRemoteDetonate,createHudState,formatScore,stepActionText} from "./hud-state.mjs";
 import {HudLabel,HudWeaponIcon,HudWeaponNotice} from "./hud-lettering";
 import {WEAPON_SLOTS} from "./weapon-selection.mjs";
 import {GuideOverlay} from "./guide-overlay";
@@ -20,17 +20,18 @@ function ActionText({target,reducedMotion}:{target:string;reducedMotion:boolean}
  return <span aria-hidden="true" className={styles.actionWord}><HudLabel text={reducedMotion?target:state.text}/><span className={styles.cursor}/></span>;
 }
 function WeaponBar({store,state,ready}:{store:HudStore;state:ReturnType<HudStore["getSnapshot"]>;ready:boolean}){
+ const remote=canRemoteDetonate(state);
  const selected=WEAPON_SLOTS.find(slot=>slot.id===state.weapon)??WEAPON_SLOTS[0];
  return <section className={styles.weaponBar} data-weapon={state.weapon} aria-label="Weapons">
   <div className={styles.weaponName} role="status" aria-label="Selected weapon"><span className="sr-only">{selected.label}</span><HudWeaponNotice key={state.weapon} weapon={selected.id!}/></div>
   <div className={styles.weaponSlots} role="group" aria-label="Weapon slots">
-   {WEAPON_SLOTS.map(slot=><button key={slot.number} className={styles.weaponSlot} data-weapon={slot.id??"reserved"} disabled={!ready||state.singularityShipCaptured||!slot.id||(slot.id==="singularity"&&(state.score<=6767||state.singularityUsed))} aria-pressed={slot.id?slot.id===state.weapon:undefined} aria-keyshortcuts={slot.id?String(slot.number):undefined} aria-label={`Slot ${slot.number}: ${slot.label}${slot.id===state.weapon?", selected":""}${slot.id==="singularity"?(state.singularityUsed?", spent":state.score<=6767?", locked: score above 6767 required":""):""}`} title={slot.id?`${slot.number} · ${slot.label}`:"Reserved for a future weapon"} onClick={()=>store.requestWeapon(`Digit${slot.number}`)}>
+   {WEAPON_SLOTS.map(slot=><button key={slot.number} className={styles.weaponSlot} data-weapon={slot.id??"reserved"} disabled={!ready||state.singularityShipCaptured||!slot.id||(slot.id==="singularity"&&(state.score<=6767||(state.singularityUsed&&!remote)))} aria-pressed={slot.id?slot.id===state.weapon:undefined} aria-keyshortcuts={slot.id?String(slot.number):undefined} aria-label={`Slot ${slot.number}: ${slot.label}${slot.id===state.weapon?", selected":""}${slot.id==="singularity"?(state.singularityUsed?(remote?", remote trigger ready":", spent"):state.score<=6767?", locked: score above 6767 required":""):""}`} title={slot.id==="singularity"&&remote?"Select slot 3, then F/click to detonate; click the selected slot to trigger":slot.id?`${slot.number} · ${slot.label}`:"Reserved for a future weapon"} onClick={()=>slot.id==="singularity"&&remote&&state.weapon==="singularity"?store.detonateSingularity():store.requestWeapon(`Digit${slot.number}`)}>
     <kbd className={styles.slotKey} aria-hidden="true"><HudLabel text={String(slot.number)}/></kbd>
     <span className={styles.weaponIcon}>{slot.id?<HudWeaponIcon weapon={slot.id}/>:<span className={styles.slotEmpty} aria-hidden="true">+</span>}</span>
     {slot.id==="bolts"&&<span className={styles.slotCharge} aria-hidden="true">{Array.from({length:12},(_,index)=><i key={index} data-lit={index<state.charge}/>)}</span>}
    </button>)}
   </div>
-  <span role="status"><HudLabel text={state.singularityUsed?(state.singularityPhase==="flight"?"ATOM BOMB IN FLIGHT":state.singularityPhase==="missed"?"SINGULARITY MISSED":state.singularityPhase==="escape"?"ESCAPE — 4 SECONDS":state.singularityPhase==="consumed"?"UNIVERSE CONSUMED":"SINGULARITY ACTIVE"):state.score<=6767?"3: LOCKED > 6767":"3: SINGULARITY READY"}/></span>
+  <span role="status"><HudLabel text={state.singularityUsed?(state.singularityPhase==="flight"?"F / CLICK: DETONATE":state.singularityPhase==="armed"?"BOMB ARMED: F / CLICK":state.singularityPhase==="detonating"?"SINGULARITY FORMING":state.singularityPhase==="escape"?"ESCAPE — 4 SECONDS":state.singularityPhase==="consumed"?"UNIVERSE CONSUMED":"SINGULARITY ACTIVE"):state.score<=6767?"3: LOCKED > 6767":"3: SINGULARITY READY"}/></span>
   {state.weapon==="bolts"&&state.charge>0&&<span className="sr-only" role="meter" aria-label="Weapon charge" aria-valuemin={0} aria-valuemax={12} aria-valuenow={state.charge}/>}
  </section>;
 }

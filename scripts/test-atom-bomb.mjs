@@ -17,12 +17,12 @@ test('swept bomb contact picks the earliest target without tunneling or applying
  const near=targetAt(2),far=targetAt(3),p=createAtomProjectile();launchAtom(p,shot());p.velocity.z=100;
  try{assert.equal(stepAtom(p,.1,[far.target,near.target],0),'impact');assert.ok(p.position.z<2);assert.equal(near.target.planetHits(),0);const impact=p.position.clone();stepAtom(p,.1,[far.target],1);assert.ok(p.position.equals(impact));}finally{near.dispose();far.dispose();}
 });
-test('a missed atom expires and never fabricates an impact',()=>{
+test('a missed atom stops armed without fabricating an impact',()=>{
  const p=createAtomProjectile();assert.equal(launchAtom(p,{...shot(),heading:new Vector3()}),false);launchAtom(p,shot());
  for(let i=0;i<70;i++)stepAtom(p,.1,[],i*.1);
- assert.equal(p.phase,'missed');assert.equal(p.age,ATOM_LIFETIME);assert.equal(p.impact,null);assert.ok(Math.abs(p.position.z-ATOM_SPEED*ATOM_LIFETIME)<1e-8);
+ assert.equal(p.phase,'armed');assert.equal(p.age,ATOM_LIFETIME);assert.equal(p.impact,null);assert.ok(Math.abs(p.position.z-ATOM_SPEED*ATOM_LIFETIME)<1e-8);
 });
-test('only impact reveals the black hole at the contact point, with immediate suction and one capture',()=>{
+test('automatic impact reveals the black hole at the contact point, with immediate suction and one capture',()=>{
  const effect=createSingularityEffect(),scene=new Group(),excluded=new Group(),body=targetAt(4),ship=new Mesh(new BoxGeometry(),new MeshStandardMaterial());ship.userData.singularityShip=true;
  excluded.userData.singularityExcluded=true;excluded.add(effect.model,effect.bomb.root);scene.add(excluded,body.mesh,ship);const unregister=registerProjectileTarget(body.mesh,body.target),original=body.mesh.material;
  try{

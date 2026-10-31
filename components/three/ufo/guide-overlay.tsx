@@ -15,7 +15,7 @@ const movementControls=[
 const weapons=[
  {key:"1",name:"Charged bolts",action:"charge",description:"Release to fire."},
  {key:"2",name:"Red death ray",action:"fire",description:"No charge; release to stop."},
- {key:"3",name:"Singularity",action:null,description:"Unlock above 6,767 points. Press F or click to fire an atom bomb. Impact creates a black hole with immediate suction. Four seconds of ship immunity after impact; one shot per universe. Missed shots expire. Fly backward with S to retreat while watching; the pull has a finite range. Crossing the black core cuts propulsion and locks the camera on the black hole until Reset Universe. Reset Universe restores the scene and score."},
+ {key:"3",name:"Singularity",action:null,description:"Unlock above 6,767 points. Press F or click to fire an atom bomb. Impact creates a black hole with immediate suction. Four seconds of ship immunity after impact; one shot per universe. Press F or click again to detonate in midair. Missed bombs stop and stay armed; reselect slot 3 to trigger them. Fly backward with S to retreat while watching; the pull has a finite range. Crossing the black core cuts propulsion and locks the camera on the black hole until Reset Universe. Reset Universe restores the scene and score."},
 ];
 
 function GuideKeys({keys,inline=false}:{keys:string[];inline?:boolean}){
