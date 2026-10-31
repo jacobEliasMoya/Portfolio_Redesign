@@ -1,3 +1,4 @@
+import {discEnvelope,stepShipTides} from "./ship-tides.mjs";
 import {Vector3} from "three";
 import {createShipCapture,updateShipCapture,SINGULARITY_CORE_RADIUS} from "./ship-capture.mjs";
 import {createBlackHole,animateBlackHole,disposeBlackHole} from "./create-black-hole.mjs";
@@ -9,7 +10,7 @@ import {getProjectileTarget} from "../ufo/projectile-collision.mjs";
 /** Prepare one reusable projectile and the approved black hole before firing. */
 export function createSingularityEffect(){
  const bomb=createAtomBomb(),model=createBlackHole({wideDisc:true});bomb.root.visible=false;model.visible=false;
- return {bomb,model,birth:createMaterialization(model),projectile:createAtomProjectile(),capture:null,age:0,started:0,targets:[],phase:"idle",shipConsumed:false,shipCapture:createShipCapture(),center:new Vector3()};
+ return {bomb,model,discRadius:discEnvelope(model),birth:createMaterialization(model),projectile:createAtomProjectile(),capture:null,age:0,started:0,targets:[],phase:"idle",shipConsumed:false,shipCapture:createShipCapture(),center:new Vector3()};
 }
 export function launchSingularity(effect,shot){
  if(!launchAtom(effect.projectile,shot))return false;
@@ -37,7 +38,8 @@ export function stepSingularity(effect,scene,delta,now,shipPosition,reducedMotio
  animateBlackHole(effect.model,dt,reducedMotion);
  stepMaterialization(effect.birth,effect.age,dt,reducedMotion);
  effect.model.updateWorldMatrix(true,false);effect.model.getWorldPosition(effect.center);
- const radius=SINGULARITY_CORE_RADIUS*effect.model.matrixWorld.getMaxScaleOnAxis();
+ const scale=effect.model.matrixWorld.getMaxScaleOnAxis(),radius=SINGULARITY_CORE_RADIUS*scale;
+ stepShipTides(effect.capture.tides,shipPosition,effect.center,effect.discRadius*scale,radius,reducedMotion);
  if(updateShipCapture(effect.shipCapture,shipPosition,effect.center,radius,effect.age)&&effect.capture.shipCaptureAge===null)effect.capture.shipCaptureAge=effect.age;
  effect.model.userData.singularityShipCaptured=effect.shipCapture.captured;effect.model.userData.singularityCaptureRadius=radius;
  stepUniverse(effect.capture,effect.age,shipPosition,reducedMotion);

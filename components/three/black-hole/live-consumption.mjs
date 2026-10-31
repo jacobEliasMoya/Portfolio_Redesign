@@ -1,7 +1,8 @@
 import {Vector3} from "three";
+import {createShipTides,tidalPosition,tidalNormal} from "./ship-tides.mjs";
 /** Keep the live instance matrices/damage buffers. Only shader uniforms move each frame. */
 export function captureUniverse(scene,point){
- const entries=[],hole={value:point.clone()},reach={value:0},time={value:0};
+ const entries=[],hole={value:point.clone()},reach={value:0},time={value:0},tides=createShipTides();
  scene.traverse(mesh=>{
   if(!mesh.isMesh)return;
   let node=mesh,ship=false,excluded=false;
@@ -12,7 +13,8 @@ export function captureUniverse(scene,point){
    material.onBeforeCompile=(shader,renderer)=>{
     previous.call(material,shader,renderer);
     Object.assign(shader.uniforms,{uSingularity:hole,uReach:reach,uCollapse:progress,uCollapseTime:time});
-    shader.vertexShader="uniform vec3 uSingularity; uniform float uReach; uniform float uCollapse; uniform float uCollapseTime;\n"+shader.vertexShader;
+    if(ship)Object.assign(shader.uniforms,{uShipCenter:tides.center,uTidalAxis:tides.axis,uTidalStretch:tides.stretch});
+    shader.vertexShader=(ship?"uniform vec3 uShipCenter; uniform vec3 uTidalAxis; uniform float uTidalStretch;\n":"")+"uniform vec3 uSingularity; uniform float uReach; uniform float uCollapse; uniform float uCollapseTime;\n"+shader.vertexShader;
     shader.vertexShader=shader.vertexShader.replace("#include <project_vertex>",`
      vec4 collapsePosition=vec4(transformed,1.0);
      vec3 fragmentSeed=vec3(0.0);
@@ -21,6 +23,7 @@ export function captureUniverse(scene,point){
       fragmentSeed=instanceMatrix[3].xyz;
      #endif
      collapsePosition=modelMatrix*collapsePosition;
+     ${ship?tidalPosition:""}
      vec3 relative=collapsePosition.xyz-uSingularity;
      float distanceToHole=length(relative);
      float pull=uCollapse*(1.0-smoothstep(uReach-3.0,uReach+3.0,distanceToHole));
@@ -33,8 +36,9 @@ export function captureUniverse(scene,point){
      vec4 mvPosition=viewMatrix*vec4(uSingularity+relative,1.0);
      gl_Position=projectionMatrix*mvPosition;
     `);
+    if(ship)shader.vertexShader=shader.vertexShader.replace("#include <defaultnormal_vertex>","#include <defaultnormal_vertex>\n"+tidalNormal);
    };
-   material.customProgramCacheKey=()=>source.customProgramCacheKey()+"-live-singularity-v1";
+   material.customProgramCacheKey=()=>source.customProgramCacheKey()+(ship?"-live-singularity-tides-v2":"-live-singularity-v1");
    return material;
   };
   mesh.material=Array.isArray(original)?original.map(patch):patch(original);
@@ -42,7 +46,7 @@ export function captureUniverse(scene,point){
   entries.push({mesh,original,progress,ship,center,wasVisible:mesh.visible,culled:mesh.frustumCulled});mesh.frustumCulled=false;
  });
  const extent=Math.max(30,...entries.filter(e=>!e.ship).map(e=>e.center.distanceTo(point)+20));
- return {entries,hole,reach,time,extent,shipCaptureAge:null};
+ return {entries,hole,reach,time,tides,extent,shipCaptureAge:null};
 }
 export function stepUniverse(capture,age,shipPosition,reducedMotion=false){
  capture.time.value=age;capture.reach.value=Math.min(capture.extent,2+Math.max(0,age)/4*capture.extent);
