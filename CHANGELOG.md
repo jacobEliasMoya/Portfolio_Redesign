@@ -1,3 +1,11 @@
+## Subtle screen glare and studio light - 2026-11-01
+
+Added a faint cool softbox sheen above the live monitor display, separate from Clean/Scanlines/Phosphor/Amber. It follows the screen's existing 3D transform and occlusion, with a cached-vector view/light half-angle response (about .025–.115 opacity), a broad upper-left reflection and soft diagonal band. Ref-only DOM style updates when rounded values change; no per-frame React state or vector allocations. Pointer-events:none and aria-hidden preserve native iframe input. This is an art-directed CSS reflection for the HTML display, not a ray-traced reflection.
+
+Added an actual 4x2 rectangular area light at [-3,4,5], aimed at the screen, using Three's bundled LTC uniforms and no external environment downloads. The reusable display material is now MeshPhysicalMaterial with metalness .15, roughness .24, clearcoat 1 and clearcoat roughness .12; regenerated the GLB. The live HTML sheen visually complements that material rather than claiming the DOM receives WebGL lighting. Flat screen and raised bevel remain unchanged.
+
+Verified focused monitor aperture/depth/disposal tests, lint and production build. Browser: model/focus views readable, approximately .062 measured glare opacity in focus view, native launch works through sheen, no console errors. Saved Codex outputs/monitor-screen-glare.png. Offline exact asset renders regenerated; no GPU/FPS profiling claimed. / and retired /arcade unaffected.
+
 ## Retire /arcade; monitor screen appearance presets - 2026-11-01
 
 Removed /arcade (now 404), its cabinet components/features and unused render/test scripts. Removed arcade-only shared loader/HUD/guide plumbing, restoring the standard root composition. Retained the existing combat ArcadeHud (its name refers to the game's HUD, not the retired route) and historical concept/reference documents. /monitor is the active hardware experience; standard / remains playable and is the monitor iframe source.

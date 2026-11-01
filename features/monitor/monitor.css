@@ -26,3 +26,6 @@
 .monitor-effects input {width:100px;accent-color:#60e3eb;}
 .monitor-effects output {min-width:34px;}
 .monitor-effects input:disabled {opacity:.3;}
+
+/* A faint view-dependent softbox reflection, independent of the color/scanline preset. */
+.monitor-screen-glare {position:absolute;inset:0;z-index:2;pointer-events:none;opacity:.06;background:radial-gradient(ellipse 62% 95% at var(--glare-x,24%) -14%,#e9f4ff 0%,#c9deed88 28%,transparent 75%),linear-gradient(118deg,transparent 8%,#eaf4ff33 22%,#eaf4ff77 23%,#eaf4ff33 25%,transparent 43%);box-shadow:inset 0 0 32px #b8d9ed55;}
