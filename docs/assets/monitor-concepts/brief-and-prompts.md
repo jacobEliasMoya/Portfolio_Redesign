@@ -1,11 +1,13 @@
 # Monitor concepts — 2026-11-01
 
-Created with built-in image_gen using the reference-3d-modeling skill. Two original concept proposals, pending user selection. Images are raster references, not implemented meshes. The site is unchanged.
+Created with built-in image_gen using the reference-3d-modeling skill. The user selected A / Silver Orbit. B remains an unselected alternative. Images are raster references, not implemented meshes. The site is unchanged.
 
 - A / Silver Orbit: silver faceted housing, hexagonal controls and foot, short graphite neck.
 - B / Graphite Block: darker stepped housing, silver pedestal, clipped rectangular foot.
 
 Both prioritize a visible volumetric casing and attached stand. The flat screen is intended as a separate display surface for later live scene integration and camera zoom-in. Generated perspective and screen ratios are illustrative; establish consistent dimensions and front/side/rear views after selecting a design. Do not treat these images as engineering drawings or claim their screen is already live.
+
+See the [Silver Orbit angle pack](silver-orbit-views/brief-and-prompts.md) for continued reference-led modeling views.
 
 ## Exact prompts
 
