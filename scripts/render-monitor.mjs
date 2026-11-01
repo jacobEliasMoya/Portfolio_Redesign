@@ -1,0 +1,14 @@
+import {readFile,writeFile,mkdtemp,mkdir,rename} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join,resolve} from 'node:path';
+import {spawnSync} from 'node:child_process';
+import {FontLoader} from 'three/addons/loaders/FontLoader.js';
+import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
+import {createSilverOrbit} from '../components/three/monitor/silver-orbit.mjs';
+import {serializeThreeAsset} from './serialize-three-asset.mjs';
+globalThis.FileReader=class {readAsArrayBuffer(blob){blob.arrayBuffer().then(data=>{this.result=data;this.onloadend?.();});}readAsDataURL(blob){blob.arrayBuffer().then(data=>{this.result=`data:${blob.type};base64,${Buffer.from(data).toString('base64')}`;this.onloadend?.();});}};
+const font=new FontLoader().parse(JSON.parse(await readFile(new URL('../public/fonts/sabo-filled.typeface.json',import.meta.url),'utf8'))),model=createSilverOrbit(font);
+await mkdir('public/models/monitor',{recursive:true});await writeFile('public/models/monitor/silver-orbit.glb',Buffer.from(await new GLTFExporter().parseAsync(model.root,{binary:true})));
+const folder=await mkdtemp(join(tmpdir(),'portfolio-monitor-')),file=join(folder,'model.json'),output=resolve(process.argv[2]??'docs/references/monitor');await mkdir(output,{recursive:true});await writeFile(file,JSON.stringify(serializeThreeAsset(model.root)));model.dispose();
+const run=spawnSync(process.env.BLENDER_EXECUTABLE??'C:/Program Files/Blender Foundation/Blender 4.3/blender.exe',['--background','--factory-startup','--python-exit-code','1','--python',resolve('scripts/render-satellite.py'),'--',file,output,'satellite'],{stdio:'ignore',windowsHide:true});if(run.error)throw run.error;process.exitCode=run.status??1;
+if(run.status===0)for(const view of ['front','rear','front-ortho','side'])await rename(join(output,`satellite-model-${view}.png`),join(output,`monitor-${view}.png`));console.log({output,status:run.status});
