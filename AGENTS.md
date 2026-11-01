@@ -10,6 +10,7 @@
 - Help Jacob learn Three.js, React Three Fiber, rendering, async loading, and the architecture as the project develops. Do not silently produce finished code with no explanation. Scale explanations to the task; do not overwhelm him with implementation detail.
 - Keep updates concise and conversational. Ask when a material preference is missing; do not repeatedly ask for approval already given.
 - Work in this project checkout. A separate clone exists in the user's home directory and is not automatically synchronized. Do not maintain two independent working implementations or overwrite either clone without a reason.
+- After completing a substantial authorized update (such as a feature, model, scene, or meaningful interface change), run the relevant checks, commit the scoped changes, and push to the current branch's configured remote without asking again. Jacob has requested this as the default workflow. Preserve unrelated local work, avoid force pushes, and report the commit and any failed checks or push blockers. A push does not authorize deployment. Follow a later instruction to keep work local or uncommitted when given.
 
 ## Design direction and preferences
 
