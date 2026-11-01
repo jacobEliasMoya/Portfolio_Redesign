@@ -1,11 +1,21 @@
 ---
 name: reference-3d-modeling
-description: Build or refine browser-ready 3D props from approved concept art or reference images in Three.js and React Three Fiber. Use for matching silhouettes, proportions, mesh construction and materials to a reference; not for generating a new concept image or ordinary scene wiring.
+description: Develop buildable concept reference packs and build or refine browser-ready 3D props in Three.js and React Three Fiber. Use for silhouettes, proportions, mesh construction and materials grounded in reference images. Not for unrelated illustration or ordinary scene wiring.
 ---
 
 # Reference-led 3D modeling
 
 Translate an approved visual into an actual mesh asset. Use the project's existing renderer, visual language and resource lifecycle. A skill improves the modeling workflow; it does not add a modeling application, a renderer or new tool access.
+
+## Buildable concept references
+
+When the user requests visual exploration for an asset, use image generation when available to develop a modeling reference, then translate the selected design into geometry only when implementation is requested. A generated picture is not a usable mesh or proof that matching geometry exists.
+
+Prioritize the intended interaction and player-facing camera before styling. Identify which surfaces must remain readable, flat, aligned or unobstructed. Keep these functional constraints fixed across variants. Describe body profiles, major parts, thicknesses, material boundaries and attachment points in terms that can be constructed. Neutral lighting and simple solid materials expose proportions better than cinematic texture and glow.
+
+Use one approved image as the common reference for additional views. Choose front, side, three-quarter or exploded views according to the ambiguity they resolve; do not require a fixed image count for every task. Preserve proportions and part count between views, inspect for contradictions, and record remaining ambiguities rather than treating generated turnarounds as dimensionally exact. Settle a dimensional plan before modeling.
+
+Save selected reference images and the prompt set in the project, with their generated/illustrative status and approval level. Keep bulky visual references outside this instruction file and link the relevant design brief. Read [references/arcade-cabinet.md](references/arcade-cabinet.md) for this project's approved monitor-parallel arcade direction; those screen rules are specific to that asset.
 
 ## Read the reference before constructing
 
@@ -16,7 +26,7 @@ Compare the current render to the reference when refining an existing asset. Pri
 ## Model the structure, then the detail
 
 - Block out body, appendages and major cavities first. Check front, side and rear silhouettes before dressing the surface.
-- Build real recesses with a deliberate depth stack. In local face coordinates, document backing, display, inner gasket, bezel and front lip depths. A solid body cap must not cover an intended cavity. A screen opening must not reveal background through its sides.
+- When the approved asset has a recess, build it with a deliberate depth stack; do not introduce recesses or screen tilt into an approved flush display. In local face coordinates, document backing, display, inner gasket, bezel and front lip depths. A solid body cap must not cover an intended cavity. A screen opening must not reveal background through its sides.
 - Use polygon rings, profiled extrusions, lathed sections, and custom faces when they express the reference better than overlapping boxes. Keep bevel width proportional to the part; avoid beveled rings so narrow that their bevels self-intersect.
 - Place repeated armor, cells and fixtures on their actual support surfaces, using local tangent frames. Check panel boundaries and seams. Decorative overlaps should be intentional; coplanar surfaces cause flicker.
 - Match polygon counts and facet scale to the established art style. Hexagonal means six-sided when the user asks for a hex silhouette; clipped rectangles and octagons are different shapes.
