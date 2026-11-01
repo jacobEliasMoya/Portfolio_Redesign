@@ -1,8 +1,18 @@
-import {Group,Mesh,MeshStandardMaterial,MeshBasicMaterial,Shape,Path,ExtrudeGeometry,CylinderGeometry,BoxGeometry,PlaneGeometry} from 'three';
+import {Group,Mesh,MeshStandardMaterial,MeshBasicMaterial,Shape,Path,ExtrudeGeometry,CylinderGeometry,BoxGeometry,PlaneGeometry,BufferGeometry,Float32BufferAttribute} from 'three';
 import {TextGeometry} from 'three/addons/geometries/TextGeometry.js';
-export const MONITOR_SCREEN=Object.freeze({width:5.16,height:3.1,x:0,y:.85,z:.37,pixels:1200});
+export const MONITOR_SCREEN=Object.freeze({width:5.16,height:3.1,x:0,y:.85,z:.465,pixels:1200});
 function outline(w,h,c){return [[-w/2+c,-h/2],[w/2-c,-h/2],[w/2,-h/2+c],[w/2,h/2-c],[w/2-c,h/2],[-w/2+c,h/2],[-w/2,h/2-c],[-w/2,-h/2+c]];}
 function polygon(points,Type=Shape){const s=new Type();points.forEach(([x,y],i)=>i?s.lineTo(x,y):s.moveTo(x,y));s.closePath();return s;}
+/** Flat polygon rings form a shallow raised rim: no sphere or curved display. */
+function screenRim(){
+ const rings=[[5.5,3.46,.06,.34],[5.36,3.32,.035,.51],[5.22,3.16,.012,.51],[5.16,3.1,.006,.455]];
+ const vertices=[];
+ for(let r=0;r<rings.length-1;r++){
+  const [w,h,c,z]=rings[r],[iw,ih,ic,iz]=rings[r+1],a=outline(w,h,c),b=outline(iw,ih,ic);
+  for(let i=0;i<8;i++){const j=(i+1)%8;for(const [p,d] of [[a[i],z],[a[j],z],[b[j],iz],[a[i],z],[b[j],iz],[b[i],iz]])vertices.push(p[0],p[1],d);}
+ }
+ const g=new BufferGeometry();g.setAttribute('position',new Float32BufferAttribute(vertices,3));g.setAttribute('uv',new Float32BufferAttribute(Array(vertices.length/3*2).fill(0),2));g.computeVertexNormals();return g;
+}
 /** Silver Orbit in model units. Front +Z; screen is a separately named material surface. */
 export function createSilverOrbit(font){
  const root=new Group();root.name='silver-orbit';const geometries=new Set(),materials=new Set();
@@ -15,8 +25,9 @@ export function createSilverOrbit(font){
  const frame=polygon(outline(6,3.85,.25));const hole=polygon(outline(5.25,3.2,.015).map(([x,y])=>[x,y+.2]),Path);frame.holes.push(hole);
  add(extrude(frame,.15,.035),silver,'front-bezel',0,.65,.18);
  const gasket=polygon(outline(5.27,3.22,.015));gasket.holes.push(polygon(outline(5.16,3.1,.006),Path));add(extrude(gasket,.025,.004),black,'screen-gasket',0,.85,.32);
+ add(screenRim(),edge,'raised-screen-bevel',0,.85,0);
  const displayMaterial=new MeshBasicMaterial({color:'#020407'});materials.add(displayMaterial);
- const screen=add(new PlaneGeometry(5.16,3.1),displayMaterial,'monitor-display',0,.85,.36);
+ const screen=add(new PlaneGeometry(5.16,3.1),displayMaterial,'monitor-display',0,.85,MONITOR_SCREEN.z-.01);
  // Broad fitted rear panels, not fine surface decoration.
  add(extrude(polygon(outline(5.42,3.2,.20)),.035,.025),edge,'rear-panel',0,.65,-.60).rotation.y=Math.PI;
  for(const sign of [-1,1]){

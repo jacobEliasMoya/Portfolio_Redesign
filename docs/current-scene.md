@@ -1,3 +1,9 @@
+## Raised planar screen bevel - 2026-11-01
+
+Silver Orbit now has a shallow raised display surround: outward chamfer, narrow flat crest, and inward slope meeting the flat screen. Four polygon rings create 48 triangles in one extra mesh, with no curved/spherical surface. Crest reaches z=.51 compared with the body's ~.365 front; display moves from .36 to .455 and its live HTML anchor follows to .465. The full 5.16 x 3.1 aperture stays clear. Regenerated the downloadable GLB from the same source. Root and arcade remain unchanged.
+
+Verified monitor geometry/aperture tests, lint and production build; offline exact mesh profile and browser three-quarter/focus views inspected. Native launch inside the live screen still works; clean browser log. Codex screenshot outputs/silver-orbit-raised-bevel.png. No full regression rerun for this local geometry adjustment; existing focused aperture/depth/disposal checks cover the changed asset.
+
 ## Silver Orbit monitor asset and live /monitor route - 2026-11-01
 
 Added an independent `/monitor` route with a real volumetric Silver Orbit model, following the approved original concept. `/` and `/arcade` source/behavior remain unchanged. Model units: enclosure 6 wide x 3.85 high, .8-ish depth; separate 5.16 x 3.1 planar display at [0,.85,.37], graphite gasket, clipped/beveled silver body, large hex side details, three hex chin buttons, Sabo JM, cyan indicator, short graphite neck and a genuine six-sided beveled silver foot/sole. Rear finish resolves the generated reference conflict as a single fitted metallic panel. This is a reference-led interpretation, not a claimed exact replica.
