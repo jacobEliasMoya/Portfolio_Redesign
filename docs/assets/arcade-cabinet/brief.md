@@ -1,3 +1,5 @@
+> Archived 2026-11-01: the user retired /arcade. The active 3D hardware experience is /monitor; implementation notes below describe earlier work.
+
 # Arcade cabinet modeling reference pack
 
 Generated visual exploration, 2026-10-31. Created with the built-in image_gen tool, using the user-accepted front-view concept as the shared input. Original AI-generated concept artwork for this project; no third-party cabinet model, logo art or textures downloaded. In-image typography approximates the selected pixel lettering; production uses the supplied Sabo Filled font.

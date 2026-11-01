@@ -12,6 +12,3 @@
 .loader-zoom button { border: 1px solid #454545; background: #111d; color: #eee; min-width: 44px; min-height: 44px; padding: 8px 12px; cursor: pointer; }
 .loader-zoom button:disabled { opacity: .3; cursor: default; }
 .loader-tour-hint { position:absolute; bottom:72px; right:clamp(16px,4vw,64px); z-index:2; max-width:calc(100% - 32px); margin:0; color:#a7b3b0; font-family:var(--font-sabo-filled),monospace; font-size:9px; line-height:1.8; text-align:right; pointer-events:none; text-shadow:0 1px 5px #000; }
-
-.standard-world,.standard-screen-ui {position:absolute;inset:0;}
-.standard-screen-ui {pointer-events:none;}

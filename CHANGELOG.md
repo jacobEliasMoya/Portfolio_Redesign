@@ -1,3 +1,11 @@
+## Retire /arcade; monitor screen appearance presets - 2026-11-01
+
+Removed /arcade (now 404), its cabinet components/features and unused render/test scripts. Removed arcade-only shared loader/HUD/guide plumbing, restoring the standard root composition. Retained the existing combat ArcadeHud (its name refers to the game's HUD, not the retired route) and historical concept/reference documents. /monitor is the active hardware experience; standard / remains playable and is the monitor iframe source.
+
+Added Clean (default), Scanlines, Green Phosphor and Amber presets to /monitor, with keyboard-accessible scanline strength 0–100% (60% initially, disabled in Clean). CSS overlay/filter is attached inside the display's transformed DOM surface; cabinet/model geometry is unaffected. Overlay has pointer-events:none, no flicker/rolling animation or new renderers/dependencies. Strength affects line opacity; color treatment belongs to the chosen preset. Preset and strength changes preserve the iframe DOM/game state; power toggle still has its existing restart behavior. Effects are app-side presentation and do not change exported GLB materials.
+
+Verification: 266 remaining regression tests (six retired cabinet tests removed), lint and production build; build lists /monitor and excludes /arcade. Browser confirmed /arcade 404, display presets and 0/100 slider endpoints. Launched/played inside scanlines and earned 1,200 points; green/amber switching retained score, selected ray and flight state. Saved Codex outputs/monitor-scanlines.png, monitor-green-phosphor.png, monitor-amber.png. Historical arcade references are retained as archived design work. No new GPU/FPS or physical mobile-device profiling claimed.
+
 ## Raised planar screen bevel - 2026-11-01
 
 Silver Orbit now has a shallow raised display surround: outward chamfer, narrow flat crest, and inward slope meeting the flat screen. Four polygon rings create 48 triangles in one extra mesh, with no curved/spherical surface. Crest reaches z=.51 compared with the body's ~.365 front; display moves from .36 to .455 and its live HTML anchor follows to .465. The full 5.16 x 3.1 aperture stays clear. Regenerated the downloadable GLB from the same source. Root and arcade remain unchanged.
