@@ -1,4 +1,6 @@
 "use client";
+import {ArcadeCabinet,type ArcadeLayout} from "@/components/three/arcade/arcade-cabinet";
+import {ArcadeControls} from "@/components/three/arcade/arcade-controls";
 import { ProceduralStarfield } from "@/components/three/space/procedural-starfield";
 import { AdaptiveQuality } from "@/components/three/canvas/adaptive-quality";
 
@@ -45,8 +47,8 @@ class LoaderBoundary extends Component<{ children: ReactNode }, { failed: boolea
   render() { return this.state.failed ? <Failure /> : this.props.children; }
 }
 
-export default function LoaderScene({ reducedMotion, replay, zoomSteps, zoomReset, assetsReady, onPhaseChange, onPrepared, onComplete, earthReady, onEarthReady }: {
-  reducedMotion: boolean; replay: number; zoomSteps: number; zoomReset: number; assetsReady: boolean; onPhaseChange: (phase: IntroPhase) => void; onPrepared: () => void; onComplete: () => void; earthReady: boolean; onEarthReady: () => void;
+export default function LoaderScene({ arcadeLayout, reducedMotion, replay, zoomSteps, zoomReset, assetsReady, onPhaseChange, onPrepared, onComplete, earthReady, onEarthReady }: {
+  arcadeLayout?:ArcadeLayout; reducedMotion: boolean; replay: number; zoomSteps: number; zoomReset: number; assetsReady: boolean; onPhaseChange: (phase: IntroPhase) => void; onPrepared: () => void; onComplete: () => void; earthReady: boolean; onEarthReady: () => void;
 }) {
   const [piloting,setPiloting]=useState(false),[actionRequest,setActionRequest]=useState(0),[tourRequest,setTourRequest]=useState({serial:0,progress:0}),[viewReset,setViewReset]=useState(0);
   const hudStore=useMemo(()=>createHudState(),[]),lettering=useMemo(()=>createHudLetteringStore(),[]);
@@ -64,7 +66,7 @@ export default function LoaderScene({ reducedMotion, replay, zoomSteps, zoomRese
     window.addEventListener("keydown",launch);
     return()=>window.removeEventListener("keydown",launch);
   },[flightReady,piloting]);
-  return <LoaderBoundary><HudLetteringProvider store={lettering}><Canvas dpr={1} frameloop="demand" camera={{ position: [0, 0, 22], fov: 40 }} gl={{ antialias: true, alpha: false }} fallback={<Failure />}>
+  return <LoaderBoundary><HudLetteringProvider store={lettering}><div className={arcadeLayout?"arcade-world":"standard-world"}><Canvas dpr={1} frameloop="demand" camera={{ position: [0, 0, 22], fov: 40 }} gl={{ antialias: true, alpha: false }} fallback={<Failure />}>
     <AdaptiveQuality reducedMotion={reducedMotion}/>
     <FollowSceneCamera hudStore={hudStore} tourRequest={tourRequest} launchCameraReady={launchCameraReady} piloting={piloting} targetRef={flightPosition} headingRef={flightHeading} upRef={flightUp} ready={flightReady} reducedMotion={reducedMotion} zoomSteps={zoomSteps} zoomReset={zoomReset+viewReset}/>
     <color attach="background" args={["#000000"]} />
@@ -78,12 +80,15 @@ export default function LoaderScene({ reducedMotion, replay, zoomSteps, zoomRese
     <Suspense fallback={null}><ParticleWordmark shipPositionRef={flightPosition} piloting={piloting} startRequested={earthReady} reducedMotion={reducedMotion} replay={replay} assetsReady={assetsReady} onPhaseChange={onPhaseChange} onPrepared={onPrepared} onComplete={() => { setFlightReady(true); onComplete(); }} /></Suspense>
     <group userData={{singularityShip:true}}><FlightCompanion hudStore={hudStore} actionRequest={actionRequest} trackUpRef={flightUp} launchCameraReady={launchCameraReady} trackHeadingRef={flightHeading} trackPositionRef={flightPosition} active={piloting} visible={earthReady} reducedMotion={reducedMotion}/></group>
     <Singularity store={hudStore} position={flightPosition} reducedMotion={reducedMotion}/>
-  </Canvas>
-    <HudLetteringLayer store={lettering} reducedMotion={reducedMotion}/>
-    <ArcadeHud store={hudStore} ready={flightReady&&assetsReady} piloting={piloting} reducedMotion={reducedMotion}
+  </Canvas></div>
+    <HudLetteringLayer store={lettering} reducedMotion={reducedMotion} frame={arcadeLayout?<ArcadeCabinet store={hudStore} layout={arcadeLayout} reducedMotion={reducedMotion}/>:undefined}/>
+    <div className={arcadeLayout?"arcade-screen-ui":"standard-screen-ui"}>
+    <ArcadeHud cabinet={!!arcadeLayout} store={hudStore} ready={flightReady&&assetsReady} piloting={piloting} reducedMotion={reducedMotion}
       onPilot={()=>setPiloting(value=>!value)}
       onAction={()=>{if(!piloting)setPiloting(true);else setActionRequest(value=>value+1);}}
       onReset={()=>{setViewReset(value=>value+1);setTourRequest(value=>({serial:value.serial+1,progress:0}));}}
       onTour={progress=>setTourRequest(value=>({serial:value.serial+1,progress}))}/>
+    </div>
+    {arcadeLayout&&<ArcadeControls layout={arcadeLayout} store={hudStore} ready={flightReady&&assetsReady} piloting={piloting} onStart={()=>setPiloting(value=>!value)}/>}
   </HudLetteringProvider></LoaderBoundary>;
 }

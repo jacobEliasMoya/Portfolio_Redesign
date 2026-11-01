@@ -205,6 +205,6 @@ class LetteringBoundary extends Component<{store:LetteringStore;children:ReactNo
 
 /** Dedicated transparent foreground scene: real lit meshes at crisp resolution,
  * independent of the heavy world's adaptive DPR. No glyph images or readbacks. */
-export function HudLetteringLayer({store,reducedMotion=false}:{store:LetteringStore;reducedMotion?:boolean}){
- return <LetteringBoundary store={store}><div aria-hidden="true" style={{position:"absolute",inset:0,zIndex:4,pointerEvents:"none"}}><Canvas orthographic camera={{position:[0,0,500],near:.1,far:1000,zoom:1}} dpr={[1.5,2]} frameloop="demand" gl={{alpha:true,antialias:true,localClippingEnabled:true}} style={{pointerEvents:"none"}} fallback={null}><LiveLetterScene store={store} reducedMotion={reducedMotion}/></Canvas></div></LetteringBoundary>;
+export function HudLetteringLayer({store,reducedMotion=false,frame}:{store:LetteringStore;reducedMotion?:boolean;frame?:ReactNode}){
+ return <LetteringBoundary store={store}><div aria-hidden="true" style={{position:"absolute",inset:0,zIndex:4,pointerEvents:"none"}}><Canvas orthographic camera={{position:[0,0,500],near:.1,far:1000,zoom:1}} dpr={[1.5,2]} frameloop="demand" gl={{alpha:true,antialias:true,localClippingEnabled:true}} style={{pointerEvents:"none"}} fallback={null}>{frame}<LiveLetterScene store={store} reducedMotion={reducedMotion}/></Canvas></div></LetteringBoundary>;
 }

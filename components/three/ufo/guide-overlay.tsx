@@ -28,7 +28,7 @@ function GuideKeys({keys,inline=false}:{keys:string[];inline?:boolean}){
  </Fragment>)}</span>;
 }
 
-export function GuideOverlay({ready,reducedMotion,onReset}:{ready:boolean;reducedMotion:boolean;onReset:()=>void}){
+export function GuideOverlay({cabinet=false,ready,reducedMotion,onReset}:{cabinet?:boolean;ready:boolean;reducedMotion:boolean;onReset:()=>void}){
  const dialog=useRef<HTMLDialogElement>(null),panel=useRef<HTMLElement>(null),closeButton=useRef<HTMLButtonElement>(null);
  const {board:sharedBoard,rendered}=useHudGuideBoard(),[localBoard]=useState(createGuideBoardState),board=sharedBoard??localBoard;
  const phase=useSyncExternalStore(board.subscribe,board.getSnapshot,board.getSnapshot),[mounted,setMounted]=useState(false);
@@ -82,7 +82,7 @@ export function GuideOverlay({ready,reducedMotion,onReset}:{ready:boolean;reduce
        <h3>EXPLORING</h3>
        <p>Scroll to travel, or choose a destination.</p>
        <p>One finger drags objects; two fingers move along the tour.</p>
-       <p className={styles.guideNote}>Flight currently requires a keyboard.</p>
+       <p className={styles.guideNote}>{cabinet?"Drag the cabinet stick to thrust and turn. Hold a colored button to fire; release bolts to shoot. Keyboard adds pitch, roll, rise and braking.":"Flight currently requires a keyboard."}</p>
      </section>
     </div>
     <div className={styles.guideActions}><button disabled={!ready} onClick={()=>{onReset();close();}}>RESET VIEW</button><button onClick={close}>BACK TO SPACE</button></div>

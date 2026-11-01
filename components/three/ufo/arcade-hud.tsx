@@ -39,7 +39,7 @@ function RocketAnnouncement({store,notice}:{store:HudStore;notice:ReturnType<Hud
  useEffect(()=>{if(!notice)return;const timer=window.setTimeout(()=>store.clearRocketNotice(notice.id),3500);return()=>window.clearTimeout(timer);},[store,notice]);
  return notice?<div className={styles.rocketNotice} style={{color:notice.color}} role="status" aria-live="polite" aria-atomic="true"><HudLabel text={notice.text}/></div>:null;
 }
-export function ArcadeHud({store,ready,piloting,reducedMotion,onPilot,onAction,onReset,onTour}:{store:HudStore;ready:boolean;piloting:boolean;reducedMotion:boolean;onPilot:()=>void;onAction:()=>void;onReset:()=>void;onTour:(progress:number)=>void}){
+export function ArcadeHud({cabinet=false,store,ready,piloting,reducedMotion,onPilot,onAction,onReset,onTour}:{cabinet?:boolean;store:HudStore;ready:boolean;piloting:boolean;reducedMotion:boolean;onPilot:()=>void;onAction:()=>void;onReset:()=>void;onTour:(progress:number)=>void}){
  const state=useSyncExternalStore(store.subscribe,store.getSnapshot,store.getSnapshot);
  const action=actionForMode(state.mode),busy=piloting&&["launching","landing","docked"].includes(state.mode);
  const actionDisabled=!ready||busy||(piloting&&state.mode==="flying"&&!state.canLand);
@@ -62,7 +62,7 @@ export function ArcadeHud({store,ready,piloting,reducedMotion,onPilot,onAction,o
     </div>
    </section>
    {piloting&&<WeaponBar store={store} state={state} ready={ready}/>}
-   <GuideOverlay ready={ready} reducedMotion={reducedMotion} onReset={onReset}/>
+   <GuideOverlay cabinet={cabinet} ready={ready} reducedMotion={reducedMotion} onReset={onReset}/>
   </div>
  </div>;
 }
